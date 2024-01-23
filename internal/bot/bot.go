@@ -27,6 +27,8 @@ func (b *bot) Run(token string) error {
 		return err
 	}
 
+	discord.Identify.Presence.Game.Name = "!help"
+
 	discord.AddHandler(b.newMessage)
 
 	discord.Open()
