@@ -12,39 +12,39 @@ import (
 
 type bot struct {
 	logger   *logger.Logger
-	commands map[string]Command
+	Commands map[string]Command
+	Session  *discordgo.Session
 }
 
 func New(
 	logger *logger.Logger,
-	commands map[string]Command) *bot {
-	return &bot{
-		logger:   logger,
-		commands: commands,
-	}
-}
+	token string) (*bot, error) {
 
-func (b *bot) Run(token string) error {
 	discord, err := discordgo.New("Bot " + token)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	discord.Identify.Presence.Game.Name = "!help"
+	return &bot{
+		logger:  logger,
+		Session: discord,
+	}, nil
+}
 
-	discord.AddHandler(b.onMessage)
+func (b *bot) Run() {
+	b.Session.Identify.Presence.Game.Name = "!help"
 
-	discord.Open()
-	defer discord.Close()
+	b.Session.AddHandler(b.onMessage)
 
 	b.logger.Info("Starting bot")
+
+	b.Session.Open()
+	defer b.Session.Close()
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 	<-c
-
-	return nil
 }
 
 func (b *bot) onMessage(discord *discordgo.Session, message *discordgo.MessageCreate) {
@@ -62,8 +62,8 @@ func (b *bot) onMessage(discord *discordgo.Session, message *discordgo.MessageCr
 	if action == "!help" {
 		s := strings.Builder{}
 
-		for k, c := range b.commands {
-			s.WriteString(fmt.Sprintf("%s - %s\n", k, c.Hint))
+		for k, c := range b.Commands {
+			s.WriteString(fmt.Sprintf("%s\t\t\t\t%s\n", k, c.Hint))
 		}
 
 		discord.ChannelMessageSend(message.ChannelID, s.String())
@@ -71,7 +71,7 @@ func (b *bot) onMessage(discord *discordgo.Session, message *discordgo.MessageCr
 		return
 	}
 
-	command, ok := b.commands[action]
+	command, ok := b.Commands[action]
 
 	if !ok {
 		discord.ChannelMessageSend(message.ChannelID, fmt.Sprintf("Unrecognized command '%s'", action))

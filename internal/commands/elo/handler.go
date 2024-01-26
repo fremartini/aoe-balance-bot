@@ -11,19 +11,27 @@ type dataProvider interface {
 	GetPlayer(steamId string) (int, error)
 }
 
-type handler struct {
-	provider      dataProvider
-	logger        *logger.Logger
-	playerMapping map[string]string
+type messageProvider interface {
+	ChannelMessageSend(channelID, content string)
 }
 
-func New(provider dataProvider,
+type handler struct {
+	dataProvider    dataProvider
+	messageProvider messageProvider
+	logger          *logger.Logger
+	playerMapping   map[string]string
+}
+
+func New(
+	dataProvider dataProvider,
+	messageProvider messageProvider,
 	playerMapping map[string]string,
 	logger *logger.Logger) *handler {
 	return &handler{
-		provider:      provider,
-		playerMapping: playerMapping,
-		logger:        logger,
+		dataProvider:    dataProvider,
+		messageProvider: messageProvider,
+		playerMapping:   playerMapping,
+		logger:          logger,
 	}
 }
 
@@ -33,16 +41,17 @@ func (h *handler) Handle(context *bot.Context) error {
 	steamId, ok := h.playerMapping[context.AuthorId]
 
 	if !ok {
+		h.messageProvider.ChannelMessageSend(context.ChannelId, "Unknown player")
 		return errors.New("unknown player")
 	}
 
-	rating, err := h.provider.GetPlayer(steamId)
+	rating, err := h.dataProvider.GetPlayer(steamId)
 
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(rating)
+	h.messageProvider.ChannelMessageSend(context.ChannelId, fmt.Sprintf("Your rating is %v", rating))
 
 	return nil
 }

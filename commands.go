@@ -4,8 +4,11 @@ import (
 	"aoe-bot/internal/api"
 	"aoe-bot/internal/bot"
 	"aoe-bot/internal/commands/elo"
+	"aoe-bot/internal/discord"
 	"aoe-bot/internal/logger"
 	"fmt"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 const prefix = "!"
@@ -13,6 +16,7 @@ const prefix = "!"
 func New(
 	api *api.Api,
 	playerMapping map[string]string,
+	session *discordgo.Session,
 	logger *logger.Logger) map[string]bot.Command {
 	return map[string]bot.Command{
 		withPrefix("team"): {
@@ -25,7 +29,9 @@ func New(
 		},
 		withPrefix("elo"): {
 			Handle: func(context *bot.Context, args []string) error {
-				handler := elo.New(api, playerMapping, logger)
+				messageProvider := discord.New(session)
+
+				handler := elo.New(api, messageProvider, playerMapping, logger)
 
 				return handler.Handle(context)
 			},

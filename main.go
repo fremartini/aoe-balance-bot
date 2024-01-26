@@ -23,11 +23,15 @@ func main() {
 		"182206571999133697": "76561198982469653",
 	}
 
-	commands := New(api, playerMapping, logger)
+	b, err := bot.New(logger, config.Token)
 
-	b := bot.New(logger, commands)
-
-	if err := b.Run(config.Token); err != nil {
+	if err != nil {
 		panic(err)
 	}
+
+	commands := New(api, playerMapping, b.Session, logger)
+
+	b.Commands = commands
+
+	b.Run()
 }
