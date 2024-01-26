@@ -7,17 +7,17 @@ import (
 	"fmt"
 )
 
-type DataProvider interface {
+type dataProvider interface {
 	GetPlayer(steamId string) (int, error)
 }
 
 type handler struct {
-	provider      DataProvider
+	provider      dataProvider
 	logger        *logger.Logger
 	playerMapping map[string]string
 }
 
-func New(provider DataProvider,
+func New(provider dataProvider,
 	playerMapping map[string]string,
 	logger *logger.Logger) *handler {
 	return &handler{

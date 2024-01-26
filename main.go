@@ -20,6 +20,7 @@ func main() {
 
 	playerMapping := map[string]string{
 		//TODO: fetch mapping somewhere
+		"182206571999133697": "76561198982469653",
 	}
 
 	commands := New(api, playerMapping, logger)

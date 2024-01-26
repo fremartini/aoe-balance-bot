@@ -33,7 +33,7 @@ func (b *bot) Run(token string) error {
 
 	discord.Identify.Presence.Game.Name = "!help"
 
-	discord.AddHandler(b.newMessage)
+	discord.AddHandler(b.onMessage)
 
 	discord.Open()
 	defer discord.Close()
@@ -47,7 +47,7 @@ func (b *bot) Run(token string) error {
 	return nil
 }
 
-func (b *bot) newMessage(discord *discordgo.Session, message *discordgo.MessageCreate) {
+func (b *bot) onMessage(discord *discordgo.Session, message *discordgo.MessageCreate) {
 	// prevent responding to own messages
 	if message.Author.ID == discord.State.User.ID {
 		return

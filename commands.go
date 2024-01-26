@@ -3,7 +3,7 @@ package main
 import (
 	"aoe-bot/internal/api"
 	"aoe-bot/internal/bot"
-	"aoe-bot/internal/elo"
+	"aoe-bot/internal/commands/elo"
 	"aoe-bot/internal/logger"
 	"fmt"
 )
@@ -11,7 +11,7 @@ import (
 const prefix = "!"
 
 func New(
-	api *api.Api, 
+	api *api.Api,
 	playerMapping map[string]string,
 	logger *logger.Logger) map[string]bot.Command {
 	return map[string]bot.Command{
