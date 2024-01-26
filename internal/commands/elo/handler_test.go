@@ -22,7 +22,7 @@ func TestHandle_UnknownPlayer_ReturnsError(t *testing.T) {
 	handler := elo.New(mock, mock, mapping, logger)
 
 	context := &bot.Context{
-		AuthorId:  "authorId",
+		UserId:    "authorId",
 		ChannelId: "channelId",
 	}
 
@@ -66,7 +66,7 @@ func TestHandle_KnownPlayer_SendsMessage(t *testing.T) {
 	handler := elo.New(mock, mock, mapping, logger)
 
 	context := &bot.Context{
-		AuthorId:  authorId,
+		UserId:    authorId,
 		ChannelId: "channelId",
 	}
 

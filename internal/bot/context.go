@@ -2,5 +2,6 @@ package bot
 
 type Context struct {
 	ChannelId string
-	AuthorId string
+	UserId    string
+	ServerId  string
 }

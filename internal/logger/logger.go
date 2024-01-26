@@ -16,27 +16,35 @@ func New(level uint) *Logger {
 }
 
 func (*Logger) Infof(format string, a ...any) {
-	printf(format, a)
+	printf("INFO", format, a)
 }
 
 func (*Logger) Info(s string) {
-	print(s)
+	print("INFO", s)
+}
+
+func (*Logger) Warnf(format string, a ...any) {
+	printf("WARN", format, a)
+}
+
+func (*Logger) Warn(s string) {
+	print("WARN", s)
 }
 
 func (*Logger) Fatalf(format string, a ...any) {
-	printf(format, a)
+	printf("FATAL", format, a)
 }
 
 func (*Logger) Fatal(s string) {
-	print(s)
+	print("FATAL", s)
 }
 
-func printf(format string, a ...any) {
-	fmt.Printf(fmt.Sprintf("[%s]\t%s\n", timestamp(), format), a...)
+func printf(prefix, format string, a ...any) {
+	fmt.Printf(fmt.Sprintf("[%s\t%s]\t%s\n", timestamp(), prefix, format), a...)
 }
 
-func print(s string) {
-	fmt.Printf("[%s]\t%s\n", timestamp(), s)
+func print(prefix, s string) {
+	fmt.Printf("[%s\t%s]\t%s\n", timestamp(), prefix, s)
 }
 
 func timestamp() string {

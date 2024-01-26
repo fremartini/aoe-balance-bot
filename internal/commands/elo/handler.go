@@ -36,9 +36,9 @@ func New(
 }
 
 func (h *handler) Handle(context *bot.Context) error {
-	h.logger.Infof("Getting ELO info for Discord user %s", context.AuthorId)
+	h.logger.Infof("Getting ELO info for Discord user %s", context.UserId)
 
-	steamId, ok := h.playerMapping[context.AuthorId]
+	steamId, ok := h.playerMapping[context.UserId]
 
 	if !ok {
 		h.messageProvider.ChannelMessageSend(context.ChannelId, "Unknown player")

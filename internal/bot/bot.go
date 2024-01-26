@@ -49,9 +49,9 @@ func (b *bot) Run(commands map[string]Command) {
 	<-c
 }
 
-func (b *bot) onMessage(discord *discordgo.Session, message *discordgo.MessageCreate) {
+func (b *bot) onMessage(session *discordgo.Session, message *discordgo.MessageCreate) {
 	// prevent responding to own messages
-	if message.Author.ID == discord.State.User.ID {
+	if message.Author.ID == session.State.User.ID {
 		return
 	}
 
@@ -68,7 +68,7 @@ func (b *bot) onMessage(discord *discordgo.Session, message *discordgo.MessageCr
 			s.WriteString(fmt.Sprintf("%s\t\t\t\t%s\n", k, c.Hint))
 		}
 
-		discord.ChannelMessageSend(message.ChannelID, s.String())
+		session.ChannelMessageSend(message.ChannelID, s.String())
 
 		return
 	}
@@ -76,13 +76,14 @@ func (b *bot) onMessage(discord *discordgo.Session, message *discordgo.MessageCr
 	command, ok := b.commands[action]
 
 	if !ok {
-		discord.ChannelMessageSend(message.ChannelID, fmt.Sprintf("Unrecognized command '%s'", action))
+		session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("Unrecognized command '%s'", action))
 		return
 	}
 
 	context := &Context{
-		AuthorId:  message.Author.ID,
+		UserId:    message.Author.ID,
 		ChannelId: message.ChannelID,
+		ServerId:  message.GuildID,
 	}
 
 	if err := command.Handle(context, split[1:]); err != nil {
