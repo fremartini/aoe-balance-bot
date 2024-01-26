@@ -1,7 +1,7 @@
 package main
 
 import (
-	"aoe-bot/internal/api"
+	"aoe-bot/internal/aoe2"
 	"aoe-bot/internal/bot"
 	"aoe-bot/internal/commands/elo"
 	"aoe-bot/internal/discord"
@@ -14,7 +14,6 @@ import (
 const prefix = "!"
 
 func New(
-	api *api.Api,
 	playerMapping map[string]string,
 	session *discordgo.Session,
 	logger *logger.Logger) map[string]bot.Command {
@@ -29,9 +28,11 @@ func New(
 		},
 		withPrefix("elo"): {
 			Handle: func(context *bot.Context, args []string) error {
-				messageProvider := discord.New(session)
+				aoe2NetApi := aoe2.New(logger)
 
-				handler := elo.New(api, messageProvider, playerMapping, logger)
+				discordAPI := discord.New(session)
+
+				handler := elo.New(aoe2NetApi, discordAPI, playerMapping, logger)
 
 				return handler.Handle(context)
 			},

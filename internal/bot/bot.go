@@ -12,7 +12,7 @@ import (
 
 type bot struct {
 	logger   *logger.Logger
-	Commands map[string]Command
+	commands map[string]Command
 	Session  *discordgo.Session
 }
 
@@ -32,7 +32,9 @@ func New(
 	}, nil
 }
 
-func (b *bot) Run() {
+func (b *bot) Run(commands map[string]Command) {
+	b.commands = commands
+
 	b.Session.Identify.Presence.Game.Name = "!help"
 
 	b.Session.AddHandler(b.onMessage)
@@ -62,7 +64,7 @@ func (b *bot) onMessage(discord *discordgo.Session, message *discordgo.MessageCr
 	if action == "!help" {
 		s := strings.Builder{}
 
-		for k, c := range b.Commands {
+		for k, c := range b.commands {
 			s.WriteString(fmt.Sprintf("%s\t\t\t\t%s\n", k, c.Hint))
 		}
 
@@ -71,7 +73,7 @@ func (b *bot) onMessage(discord *discordgo.Session, message *discordgo.MessageCr
 		return
 	}
 
-	command, ok := b.Commands[action]
+	command, ok := b.commands[action]
 
 	if !ok {
 		discord.ChannelMessageSend(message.ChannelID, fmt.Sprintf("Unrecognized command '%s'", action))

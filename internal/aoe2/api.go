@@ -1,4 +1,4 @@
-package api
+package aoe2
 
 import (
 	"aoe-bot/internal/logger"
@@ -8,12 +8,12 @@ import (
 	"net/http"
 )
 
-type Api struct {
+type api struct {
 	logger *logger.Logger
 }
 
-func New(logger *logger.Logger) *Api {
-	return &Api{
+func New(logger *logger.Logger) *api {
+	return &api{
 		logger: logger,
 	}
 }
@@ -24,7 +24,7 @@ type playerResponse struct {
 	Rating int
 }
 
-func (a *Api) GetPlayer(steamId string) (int, error) {
+func (a *api) GetPlayer(steamId string) (int, error) {
 	uri := fmt.Sprintf("%s/player/ratinghistory?game=aoe2de&leaderboard_id=3&count=1&steam_id=%s", base_url, steamId)
 
 	a.logger.Infof("Requesting ELO for Steam user %s", steamId)
