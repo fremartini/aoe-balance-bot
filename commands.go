@@ -4,6 +4,7 @@ import (
 	"aoe-bot/internal/aoe2"
 	"aoe-bot/internal/bot"
 	"aoe-bot/internal/commands/elo"
+	"aoe-bot/internal/commands/team"
 	"aoe-bot/internal/discord"
 	"aoe-bot/internal/logger"
 	"fmt"
@@ -20,9 +21,13 @@ func New(
 	return map[string]bot.Command{
 		withPrefix("team"): {
 			Handle: func(context *bot.Context, args []string) error {
-				logger.Info("Not implemented")
+				aoe2NetApi := aoe2.New(logger)
 
-				return nil
+				discordAPI := discord.New(session)
+
+				handler := team.New(aoe2NetApi, discordAPI, playerMapping, logger)
+
+				return handler.Handle(context)
 			},
 			Hint: "Create two teams consisting of players in your current channel",
 		},

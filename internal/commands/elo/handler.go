@@ -18,8 +18,8 @@ type messageProvider interface {
 type handler struct {
 	dataProvider    dataProvider
 	messageProvider messageProvider
-	logger          *logger.Logger
 	playerMapping   map[string]string
+	logger          *logger.Logger
 }
 
 func New(
