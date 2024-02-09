@@ -3,7 +3,9 @@ package team
 import (
 	"aoe-bot/internal/bot"
 	"aoe-bot/internal/logger"
+	"cmp"
 	"fmt"
+	"slices"
 )
 
 type dataProvider interface {
@@ -11,7 +13,6 @@ type dataProvider interface {
 }
 
 type discordInfoProvider interface {
-	ChannelMessageSend(channelID, content string)
 	FindUserVoiceChannel(guildId, userid string) (string, error)
 	FindUsersInVoiceChannel(serverId, channelId string) ([]*string, error)
 }
@@ -36,42 +37,33 @@ func New(
 	}
 }
 
-func (h *handler) Handle(context *bot.Context) error {
+func (h *handler) Handle(context *bot.Context) ([]*Team, error) {
 	// find users channel
 	channelId, err := h.discordInfoProvider.FindUserVoiceChannel(context.ServerId, context.UserId)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	// find all users in channel
-	users, err := h.discordInfoProvider.FindUsersInVoiceChannel(context.ServerId, channelId)
+	// find all usernames in channel
+	usernames, err := h.discordInfoProvider.FindUsersInVoiceChannel(context.ServerId, channelId)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// map discord ids to steam ids
-	steamIds := []string{}
+	players := []*Player{}
 	unknowns := []string{}
 
-	for _, user := range users {
-		steamId, ok := h.playerMapping[*user]
+	for _, username := range usernames {
+		steamId, ok := h.playerMapping[*username]
 
 		if !ok {
-			unknowns = append(unknowns, *user)
+			unknowns = append(unknowns, *username)
+			continue
 		}
 
-		steamIds = append(steamIds, steamId)
-	}
-
-	fmt.Println(steamIds)
-	fmt.Println(unknowns)
-
-	// lookup steam ids for all users
-	ratings := map[string]int{}
-
-	for _, steamId := range steamIds {
 		rating, err := h.dataProvider.GetPlayer(steamId)
 
 		if err != nil {
@@ -79,13 +71,43 @@ func (h *handler) Handle(context *bot.Context) error {
 			continue
 		}
 
-		ratings[steamId] = rating
+		player := &Player{
+			DiscordName: *username,
+			SteamId:     steamId,
+			Rating:      rating,
+		}
+
+		players = append(players, player)
 	}
+
+	fmt.Println(unknowns)
 
 	// create teams
-	for k, v := range ratings {
-		fmt.Println(k, v)
+	team1, team2 := createTeams(players)
+
+	return []*Team{team1, team2}, nil
+}
+
+func createTeams(players []*Player) (*Team, *Team) {
+	t1 := &Team{}
+	t2 := &Team{}
+
+	t1Rating := 0
+	t2Rating := 0
+
+	slices.SortFunc(players, func(a, b *Player) int {
+		return cmp.Compare(b.Rating, a.Rating)
+	})
+
+	for _, player := range players {
+		if t1Rating < t2Rating {
+			t1.Players = append(t1.Players, player)
+			t1Rating += player.Rating
+		} else {
+			t2.Players = append(t2.Players, player)
+			t2Rating += player.Rating
+		}
 	}
 
-	return nil
+	return t1, t2
 }

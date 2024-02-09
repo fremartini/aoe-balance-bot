@@ -1,7 +1,7 @@
 package discord
 
 import (
-	"errors"
+	"aoe-bot/internal/errors"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -35,7 +35,7 @@ func (p *api) FindUserVoiceChannel(serverId, userId string) (string, error) {
 		return vs.ChannelID, nil
 	}
 
-	return "", errors.New("user is not in a voice channel")
+	return "", errors.NewApplicationError("You are not in a voice channel")
 }
 
 func (p *api) FindUsersInVoiceChannel(serverId, channelId string) ([]*string, error) {

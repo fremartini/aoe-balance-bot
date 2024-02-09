@@ -1,6 +1,7 @@
 package aoe2
 
 import (
+	"aoe-bot/internal/errors"
 	"aoe-bot/internal/logger"
 	"encoding/json"
 	"fmt"
@@ -43,11 +44,20 @@ func (a *api) GetPlayer(steamId string) (int, error) {
 		return 0, err
 	}
 
+	a.logger.Infof("Got response %d for user id %s", resp.StatusCode, steamId)
+
+	if resp.StatusCode < 200 || resp.StatusCode > 300 {
+		errorMsg := fmt.Sprintf("(%s) %d", string(body), resp.StatusCode)
+
+		return 0, errors.NewServerError(errorMsg)
+	}
+
 	players := &[]playerResponse{}
 	json.Unmarshal(body, players)
 
 	if len(*players) == 0 {
-		return 0, fmt.Errorf("no user with id %s exists", steamId)
+		a.logger.Infof("No user with id %s exists", steamId)
+		return 0, errors.NewNotFoundError()
 	}
 
 	return (*players)[0].Rating, nil

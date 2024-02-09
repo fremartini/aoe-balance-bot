@@ -3,23 +3,21 @@ package elo_test
 import (
 	"aoe-bot/internal/bot"
 	"aoe-bot/internal/commands/elo"
+	internalErrors "aoe-bot/internal/errors"
 	"aoe-bot/internal/logger"
-	"fmt"
-	"strings"
+	"errors"
 	"testing"
 )
 
 func TestHandle_UnknownPlayer_ReturnsError(t *testing.T) {
 	// arrange
-	mock := &mock{
-		FakeChannelMessageSend: func(s1, s2 string) {},
-	}
+	mock := &mock{}
 
 	logger := logger.New(0)
 
 	mapping := map[string]string{}
 
-	handler := elo.New(mock, mock, mapping, logger)
+	handler := elo.New(mock, mapping, logger)
 
 	context := &bot.Context{
 		UserId:    "authorId",
@@ -27,67 +25,54 @@ func TestHandle_UnknownPlayer_ReturnsError(t *testing.T) {
 	}
 
 	// act
-	actual := handler.Handle(context)
+	_, err := handler.Handle(context)
 
 	// assert
-	if actual == nil {
-		t.Errorf("actual was null")
+	if !errors.Is(err, &internalErrors.NotFoundError{}) {
+		t.Errorf("actual was not expected error")
 	}
 }
 
-func TestHandle_KnownPlayer_SendsMessage(t *testing.T) {
+func TestHandle_KnownPlayer_ReturnsRating(t *testing.T) {
 	// arrange
-	called := false
-	rating := 1000
-	authorId := "authorId"
-	steamId := "steamId"
+	expected := 1000
 
 	mock := &mock{
-		FakeChannelMessageSend: func(channelId, content string) {
-			if strings.Contains(content, fmt.Sprint(rating)) {
-				called = true
-			}
-		},
-		FakeGetPlayer: func(id string) (int, error) {
-			if id == steamId {
-				return rating, nil
-			}
-			return 0, nil
-
+		FakeGetPlayer: func(s string) (int, error) {
+			return expected, nil
 		},
 	}
 
 	logger := logger.New(0)
 
 	mapping := map[string]string{
-		authorId: steamId,
+		"authorId": "steamId",
 	}
 
-	handler := elo.New(mock, mock, mapping, logger)
+	handler := elo.New(mock, mapping, logger)
 
 	context := &bot.Context{
-		UserId:    authorId,
+		UserId:    "authorId",
 		ChannelId: "channelId",
 	}
 
 	// act
-	handler.Handle(context)
+	rating, err := handler.Handle(context)
 
 	// assert
-	if !called {
-		t.Errorf("message was not sent")
+	if err != nil {
+		t.Error("error was not nil")
+	}
+
+	if rating != expected {
+		t.Errorf("expected %v got %v", rating, expected)
 	}
 }
 
 type mock struct {
-	FakeGetPlayer          func(string) (int, error)
-	FakeChannelMessageSend func(string, string)
+	FakeGetPlayer func(string) (int, error)
 }
 
 func (m *mock) GetPlayer(steamId string) (int, error) {
 	return m.FakeGetPlayer(steamId)
-}
-
-func (m *mock) ChannelMessageSend(channelID, content string) {
-	m.FakeChannelMessageSend(channelID, content)
 }
