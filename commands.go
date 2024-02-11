@@ -10,6 +10,7 @@ import (
 	"aoe-bot/internal/logger"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -29,10 +30,34 @@ func New(
 
 				handler := team.New(aoe2NetApi, discordAPI, playerMapping, logger)
 
-				teams, err := handler.Handle(context)
+				teams, unknowns, err := handler.Handle(context)
 
 				if err == nil {
-					fmt.Println(teams)
+					var sb strings.Builder
+
+					for teamNumber, team := range teams {
+						players := team.Players
+
+						sb.WriteString(fmt.Sprintf("Team %d:\n", teamNumber+1))
+						for _, player := range players {
+							s := fmt.Sprintf("%s (%d)\n", player.DiscordName, player.Rating)
+							sb.WriteString(s)
+						}
+						sb.WriteString("\n")
+					}
+
+					if len(unknowns) > 0 {
+						sb.WriteString("Unknown players (missing steam id)\n")
+
+						for _, username := range unknowns {
+							s := fmt.Sprintf("%s\n", username)
+							sb.WriteString(s)
+						}
+
+						sb.WriteString("\n")
+					}
+
+					discordAPI.ChannelMessageSend(context.ChannelId, sb.String())
 
 					return nil
 				}

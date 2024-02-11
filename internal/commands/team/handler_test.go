@@ -3,6 +3,7 @@ package team_test
 import (
 	"aoe-bot/internal/bot"
 	"aoe-bot/internal/commands/team"
+	"aoe-bot/internal/discord"
 	"aoe-bot/internal/logger"
 	"errors"
 	"slices"
@@ -11,39 +12,54 @@ import (
 
 func TestHandle_ReturnsTeams(t *testing.T) {
 	// arrange
-	user1 := "user1"
-	user2 := "user2"
-	user3 := "user3"
-	user4 := "user4"
+	user1 := discord.User{
+		Username: "user1",
+		Id:       "id1",
+	}
 
-	id1 := "id1"
-	id2 := "id2"
-	id3 := "id3"
-	id4 := "id4"
+	user2 := discord.User{
+		Username: "user2",
+		Id:       "id2",
+	}
+
+	user3 := discord.User{
+		Username: "user3",
+		Id:       "id3",
+	}
+
+	user4 := discord.User{
+		Username: "user4",
+		Id:       "id4",
+	}
+
+	steamId1 := "steamId1"
+	steamId2 := "steamId2"
+	steamId3 := "steamId3"
+	steamId4 := "steamId4"
 
 	mock := &mock{
 		FakeFindUserVoiceChannel: func(guildId, userid string) (string, error) {
 			return "voiceChannel", nil
 		},
-		FakeFindUsersInVoiceChannel: func(serverId, channelId string) ([]*string, error) {
-			return []*string{
+		FakeFindUsersInVoiceChannel: func(serverId, channelId string) ([]*discord.User, error) {
+			return []*discord.User{
 				&user1, &user2, &user3, &user4,
 			}, nil
 		},
 		FakeGetPlayer: func(s string) (int, error) {
-			if s == id1 {
+			if s == steamId1 {
 				return 1800, nil
 			}
 
-			if s == id2 {
+			if s == steamId2 {
 				return 1300, nil
 			}
 
-			if s == id3 {
+			if s == steamId3 {
 				return 800, nil
 			}
 
-			if s == id4 {
+			if s == steamId4 {
 				return 2200, nil
 			}
 
@@ -52,10 +68,10 @@ func TestHandle_ReturnsTeams(t *testing.T) {
 	}
 
 	players := map[string]string{
-		user1: id1,
-		user2: id2,
-		user3: id3,
-		user4: id4,
+		user1.Id: steamId1,
+		user2.Id: steamId2,
+		user3.Id: steamId3,
+		user4.Id: steamId4,
 	}
 
 	logger := logger.New(0)
@@ -65,7 +81,7 @@ func TestHandle_ReturnsTeams(t *testing.T) {
 	context := &bot.Context{}
 
 	// act
-	teams, err := handler.Handle(context)
+	teams, unknowns, err := handler.Handle(context)
 
 	// assert
 	if err != nil {
@@ -102,12 +118,16 @@ func TestHandle_ReturnsTeams(t *testing.T) {
 	}) {
 		t.Error("missing ranking 800")
 	}
+
+	if len(unknowns) != 0 {
+		t.Error("unknowns should be empty")
+	}
 }
 
 type mock struct {
 	FakeGetPlayer               func(string) (int, error)
 	FakeFindUserVoiceChannel    func(guildId, userid string) (string, error)
-	FakeFindUsersInVoiceChannel func(serverId, channelId string) ([]*string, error)
+	FakeFindUsersInVoiceChannel func(serverId, channelId string) ([]*discord.User, error)
 }
 
 func (m *mock) GetPlayer(steamId string) (int, error) {
@@ -118,6 +138,6 @@ func (m *mock) FindUserVoiceChannel(guildId, userid string) (string, error) {
 	return m.FakeFindUserVoiceChannel(guildId, userid)
 }
 
-func (m *mock) FindUsersInVoiceChannel(serverId, channelId string) ([]*string, error) {
+func (m *mock) FindUsersInVoiceChannel(serverId, channelId string) ([]*discord.User, error) {
 	return m.FakeFindUsersInVoiceChannel(serverId, channelId)
 }

@@ -2,9 +2,9 @@ package team
 
 import (
 	"aoe-bot/internal/bot"
+	"aoe-bot/internal/discord"
 	"aoe-bot/internal/logger"
 	"cmp"
-	"fmt"
 	"slices"
 )
 
@@ -14,7 +14,7 @@ type dataProvider interface {
 
 type discordInfoProvider interface {
 	FindUserVoiceChannel(guildId, userid string) (string, error)
-	FindUsersInVoiceChannel(serverId, channelId string) ([]*string, error)
+	FindUsersInVoiceChannel(serverId, channelId string) ([]*discord.User, error)
 }
 
 type handler struct {
@@ -37,30 +37,27 @@ func New(
 	}
 }
 
-func (h *handler) Handle(context *bot.Context) ([]*Team, error) {
-	// find users channel
+func (h *handler) Handle(context *bot.Context) ([]*Team, []string, error) {
 	channelId, err := h.discordInfoProvider.FindUserVoiceChannel(context.ServerId, context.UserId)
 
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	// find all usernames in channel
-	usernames, err := h.discordInfoProvider.FindUsersInVoiceChannel(context.ServerId, channelId)
+	users, err := h.discordInfoProvider.FindUsersInVoiceChannel(context.ServerId, channelId)
 
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	// map discord ids to steam ids
 	players := []*Player{}
 	unknowns := []string{}
 
-	for _, username := range usernames {
-		steamId, ok := h.playerMapping[*username]
+	for _, user := range users {
+		steamId, ok := h.playerMapping[user.Id]
 
 		if !ok {
-			unknowns = append(unknowns, *username)
+			unknowns = append(unknowns, user.Username)
 			continue
 		}
 
@@ -72,7 +69,7 @@ func (h *handler) Handle(context *bot.Context) ([]*Team, error) {
 		}
 
 		player := &Player{
-			DiscordName: *username,
+			DiscordName: user.Username,
 			SteamId:     steamId,
 			Rating:      rating,
 		}
@@ -80,12 +77,9 @@ func (h *handler) Handle(context *bot.Context) ([]*Team, error) {
 		players = append(players, player)
 	}
 
-	fmt.Println(unknowns)
-
-	// create teams
 	team1, team2 := createTeams(players)
 
-	return []*Team{team1, team2}, nil
+	return []*Team{team1, team2}, unknowns, nil
 }
 
 func createTeams(players []*Player) (*Team, *Team) {

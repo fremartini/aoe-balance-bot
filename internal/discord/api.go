@@ -38,24 +38,29 @@ func (p *api) FindUserVoiceChannel(serverId, userId string) (string, error) {
 	return "", errors.NewApplicationError("You are not in a voice channel")
 }
 
-func (p *api) FindUsersInVoiceChannel(serverId, channelId string) ([]*string, error) {
+func (p *api) FindUsersInVoiceChannel(serverId, channelId string) ([]*User, error) {
 	guild, err := p.session.State.Guild(serverId)
 
 	if err != nil {
-		return []*string{}, err
+		return []*User{}, err
 	}
 
-	discordIds := []*string{}
+	users := []*User{}
 
 	for _, vs := range guild.VoiceStates {
 		if vs.ChannelID != channelId {
 			continue
 		}
 
-		user := vs.Member.User
+		discordUser := vs.Member.User
 
-		discordIds = append(discordIds, &user.ID)
+		user := User{
+			Username: discordUser.Username,
+			Id:       discordUser.ID,
+		}
+
+		users = append(users, &user)
 	}
 
-	return discordIds, nil
+	return users, nil
 }
