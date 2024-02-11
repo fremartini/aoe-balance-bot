@@ -8,8 +8,9 @@ import (
 )
 
 type config struct {
-	Token    string
-	LogLevel uint
+	Token          string
+	LogLevel       uint
+	SteamIdChannel string
 }
 
 const CONFIG_FILE = ".config"
@@ -18,10 +19,11 @@ func Read() (*config, error) {
 	if _, err := os.Stat(CONFIG_FILE); errors.Is(err, os.ErrNotExist) {
 
 		token := os.Getenv("token")
-		logLevel := os.Getenv("level")
+		logLevel := os.Getenv("logLevel")
+		steamIdChannel := os.Getenv("steamIdChannel")
 
-		if token == "" || logLevel == "" {
-			return nil, errors.New("both token and logLevel must be supplied to run without config file")
+		if token == "" || logLevel == "" || steamIdChannel == "" {
+			return nil, errors.New("token, logLevel and steamIdChannel must be supplied to run without config file")
 		}
 
 		level, err := strconv.ParseUint(logLevel, 10, 64)
@@ -31,8 +33,9 @@ func Read() (*config, error) {
 		}
 
 		return &config{
-			Token:    token,
-			LogLevel: uint(level),
+			Token:          token,
+			LogLevel:       uint(level),
+			SteamIdChannel: steamIdChannel,
 		}, nil
 	}
 
