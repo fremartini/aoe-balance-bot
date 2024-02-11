@@ -16,7 +16,7 @@ func New(level uint) *Logger {
 }
 
 func (*Logger) Infof(format string, a ...any) {
-	printf("INFO", format, a)
+	printf("INFO", format, a...)
 }
 
 func (*Logger) Info(s string) {
@@ -24,7 +24,7 @@ func (*Logger) Info(s string) {
 }
 
 func (*Logger) Warnf(format string, a ...any) {
-	printf("WARN", format, a)
+	printf("WARN", format, a...)
 }
 
 func (*Logger) Warn(s string) {
@@ -32,7 +32,7 @@ func (*Logger) Warn(s string) {
 }
 
 func (*Logger) Fatalf(format string, a ...any) {
-	printf("FATAL", format, a)
+	printf("FATAL", format, a...)
 }
 
 func (*Logger) Fatal(s string) {

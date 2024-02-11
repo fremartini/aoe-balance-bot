@@ -65,18 +65,19 @@ func TestHandle_ReturnsTeams(t *testing.T) {
 
 			return 0, errors.New("invalid player")
 		},
-	}
-
-	players := map[string]string{
-		user1.Id: steamId1,
-		user2.Id: steamId2,
-		user3.Id: steamId3,
-		user4.Id: steamId4,
+		FakeGetPlayers: func() map[string]string {
+			return map[string]string{
+				user1.Id: steamId1,
+				user2.Id: steamId2,
+				user3.Id: steamId3,
+				user4.Id: steamId4,
+			}
+		},
 	}
 
 	logger := logger.New(0)
 
-	handler := team.New(mock, mock, players, logger)
+	handler := team.New(mock, mock, mock, logger)
 
 	context := &bot.Context{}
 
@@ -128,6 +129,7 @@ type mock struct {
 	FakeGetPlayer               func(string) (int, error)
 	FakeFindUserVoiceChannel    func(guildId, userid string) (string, error)
 	FakeFindUsersInVoiceChannel func(serverId, channelId string) ([]*discord.User, error)
+	FakeGetPlayers              func() map[string]string
 }
 
 func (m *mock) GetPlayer(steamId string) (int, error) {
@@ -140,4 +142,8 @@ func (m *mock) FindUserVoiceChannel(guildId, userid string) (string, error) {
 
 func (m *mock) FindUsersInVoiceChannel(serverId, channelId string) ([]*discord.User, error) {
 	return m.FakeFindUsersInVoiceChannel(serverId, channelId)
+}
+
+func (m *mock) GetPlayers() map[string]string {
+	return m.FakeGetPlayers()
 }

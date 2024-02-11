@@ -8,6 +8,7 @@ import (
 	"aoe-bot/internal/discord"
 	internalErrors "aoe-bot/internal/errors"
 	"aoe-bot/internal/logger"
+	playermapper "aoe-bot/internal/player_mapper"
 	"errors"
 	"fmt"
 	"strings"
@@ -18,7 +19,7 @@ import (
 const prefix = "!"
 
 func New(
-	playerMapping map[string]string,
+	mapper *playermapper.PlayerMapper,
 	session *discordgo.Session,
 	logger *logger.Logger) map[string]bot.Command {
 	return map[string]bot.Command{
@@ -28,7 +29,7 @@ func New(
 
 				discordAPI := discord.New(session)
 
-				handler := team.New(aoe2NetApi, discordAPI, playerMapping, logger)
+				handler := team.New(aoe2NetApi, discordAPI, mapper, logger)
 
 				teams, unknowns, err := handler.Handle(context)
 
@@ -72,7 +73,7 @@ func New(
 
 				discordAPI := discord.New(session)
 
-				handler := elo.New(aoe2NetApi, playerMapping, logger)
+				handler := elo.New(aoe2NetApi, mapper, logger)
 
 				rating, err := handler.Handle(context)
 

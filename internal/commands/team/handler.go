@@ -17,22 +17,26 @@ type discordInfoProvider interface {
 	FindUsersInVoiceChannel(serverId, channelId string) ([]*discord.User, error)
 }
 
+type playerProvider interface {
+	GetPlayers() map[string]string
+}
+
 type handler struct {
 	dataProvider        dataProvider
 	discordInfoProvider discordInfoProvider
+	playerProvider      playerProvider
 	logger              *logger.Logger
-	playerMapping       map[string]string
 }
 
 func New(
 	dataProvider dataProvider,
 	discordInfoProvider discordInfoProvider,
-	playerMapping map[string]string,
+	playerProvider playerProvider,
 	logger *logger.Logger) *handler {
 	return &handler{
 		dataProvider:        dataProvider,
 		discordInfoProvider: discordInfoProvider,
-		playerMapping:       playerMapping,
+		playerProvider:      playerProvider,
 		logger:              logger,
 	}
 }
@@ -54,7 +58,7 @@ func (h *handler) Handle(context *bot.Context) ([]*Team, []string, error) {
 	unknowns := []string{}
 
 	for _, user := range users {
-		steamId, ok := h.playerMapping[user.Id]
+		steamId, ok := h.playerProvider.GetPlayers()[user.Id]
 
 		if !ok {
 			unknowns = append(unknowns, user.Username)

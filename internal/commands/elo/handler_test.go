@@ -11,13 +11,15 @@ import (
 
 func TestHandle_UnknownPlayer_ReturnsError(t *testing.T) {
 	// arrange
-	mock := &mock{}
+	mock := &mock{
+		FakeGetPlayers: func() map[string]string {
+			return map[string]string{}
+		},
+	}
 
 	logger := logger.New(0)
 
-	mapping := map[string]string{}
-
-	handler := elo.New(mock, mapping, logger)
+	handler := elo.New(mock, mock, logger)
 
 	context := &bot.Context{
 		UserId:    "authorId",
@@ -41,15 +43,16 @@ func TestHandle_KnownPlayer_ReturnsRating(t *testing.T) {
 		FakeGetPlayer: func(s string) (int, error) {
 			return expected, nil
 		},
+		FakeGetPlayers: func() map[string]string {
+			return map[string]string{
+				"authorId": "steamId",
+			}
+		},
 	}
 
 	logger := logger.New(0)
 
-	mapping := map[string]string{
-		"authorId": "steamId",
-	}
-
-	handler := elo.New(mock, mapping, logger)
+	handler := elo.New(mock, mock, logger)
 
 	context := &bot.Context{
 		UserId:    "authorId",
@@ -70,9 +73,14 @@ func TestHandle_KnownPlayer_ReturnsRating(t *testing.T) {
 }
 
 type mock struct {
-	FakeGetPlayer func(string) (int, error)
+	FakeGetPlayer  func(string) (int, error)
+	FakeGetPlayers func() map[string]string
 }
 
 func (m *mock) GetPlayer(steamId string) (int, error) {
 	return m.FakeGetPlayer(steamId)
+}
+
+func (m *mock) GetPlayers() map[string]string {
+	return m.FakeGetPlayers()
 }
