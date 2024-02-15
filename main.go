@@ -4,7 +4,6 @@ import (
 	"aoe-bot/internal/bot"
 	"aoe-bot/internal/config"
 	"aoe-bot/internal/logger"
-	playermapper "aoe-bot/internal/player_mapper"
 )
 
 func main() {
@@ -16,21 +15,13 @@ func main() {
 
 	logger := logger.New(config.LogLevel)
 
-	b, err := bot.New(logger, config.Token, config.SteamIdChannel)
+	b, err := bot.New(logger, config.Token)
 
 	if err != nil {
 		panic(err)
 	}
 
-	playerMapper := playermapper.New(logger, b.Session, config.SteamIdChannel)
+	commands := New(b.Session, logger)
 
-	err = playerMapper.BuildPlayerMapping()
-
-	if err != nil {
-		panic(err)
-	}
-
-	commands := New(playerMapper, b.Session, logger)
-
-	b.Run(commands, playerMapper)
+	b.Run(commands)
 }

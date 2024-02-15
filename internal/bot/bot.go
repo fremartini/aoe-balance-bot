@@ -2,7 +2,6 @@ package bot
 
 import (
 	"aoe-bot/internal/logger"
-	playermapper "aoe-bot/internal/player_mapper"
 	"fmt"
 	"os"
 	"os/signal"
@@ -12,17 +11,14 @@ import (
 )
 
 type bot struct {
-	logger           *logger.Logger
-	commands         map[string]Command
-	Session          *discordgo.Session
-	steamIdChannelId string
-	mapper           *playermapper.PlayerMapper
+	logger   *logger.Logger
+	commands map[string]Command
+	Session  *discordgo.Session
 }
 
 func New(
 	logger *logger.Logger,
 	token string,
-	steamIdChannelId string,
 ) (*bot, error) {
 	discord, err := discordgo.New("Bot " + token)
 
@@ -31,15 +27,13 @@ func New(
 	}
 
 	return &bot{
-		logger:           logger,
-		Session:          discord,
-		steamIdChannelId: steamIdChannelId,
+		logger:  logger,
+		Session: discord,
 	}, nil
 }
 
-func (b *bot) Run(commands map[string]Command, mapper *playermapper.PlayerMapper) {
+func (b *bot) Run(commands map[string]Command) {
 	b.commands = commands
-	b.mapper = mapper
 
 	b.Session.Identify.Presence.Game.Name = "!help"
 
@@ -58,15 +52,6 @@ func (b *bot) Run(commands map[string]Command, mapper *playermapper.PlayerMapper
 func (b *bot) onMessage(session *discordgo.Session, message *discordgo.MessageCreate) {
 	// prevent responding to own messages
 	if message.Author.ID == session.State.User.ID {
-		return
-	}
-
-	// user posted id in the special 'id' channel
-	if message.ChannelID == b.steamIdChannelId {
-		// content is assumed to be the users steam id
-		steamId := message.Content
-
-		b.mapper.AddPlayer(message.Author.ID, steamId)
 		return
 	}
 

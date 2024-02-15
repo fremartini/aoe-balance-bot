@@ -1,14 +1,12 @@
 package main
 
 import (
-	"aoe-bot/internal/aoe2"
 	"aoe-bot/internal/bot"
-	"aoe-bot/internal/commands/elo"
-	"aoe-bot/internal/commands/team"
+	"aoe-bot/internal/commands/balance"
 	"aoe-bot/internal/discord"
 	internalErrors "aoe-bot/internal/errors"
+	"aoe-bot/internal/librematch"
 	"aoe-bot/internal/logger"
-	playermapper "aoe-bot/internal/player_mapper"
 	"errors"
 	"fmt"
 	"strings"
@@ -19,76 +17,61 @@ import (
 const prefix = "!"
 
 func New(
-	mapper *playermapper.PlayerMapper,
 	session *discordgo.Session,
 	logger *logger.Logger) map[string]bot.Command {
 	return map[string]bot.Command{
-		withPrefix("team"): {
+		withPrefix("balance"): {
 			Handle: func(context *bot.Context, args []string) error {
-				aoe2NetApi := aoe2.New(logger)
-
 				discordAPI := discord.New(session)
 
-				handler := team.New(aoe2NetApi, discordAPI, mapper, logger)
-
-				teams, unknowns, err := handler.Handle(context)
-
-				if err == nil {
-					var sb strings.Builder
-
-					for teamNumber, team := range teams {
-						players := team.Players
-
-						sb.WriteString(fmt.Sprintf("Team %d:\n", teamNumber+1))
-						for _, player := range players {
-							s := fmt.Sprintf("%s (%d)\n", player.DiscordName, player.Rating)
-							sb.WriteString(s)
-						}
-						sb.WriteString("\n")
-					}
-
-					if len(unknowns) > 0 {
-						sb.WriteString("Unknown players (missing steam id)\n")
-
-						for _, username := range unknowns {
-							s := fmt.Sprintf("%s\n", username)
-							sb.WriteString(s)
-						}
-
-						sb.WriteString("\n")
-					}
-
-					discordAPI.ChannelMessageSend(context.ChannelId, sb.String())
-
+				if len(args) == 0 {
+					discordAPI.ChannelMessageSend(context.ChannelId, "Missing game id")
 					return nil
 				}
 
-				return handleError(err, context.ChannelId, discordAPI)
-			},
-			Hint: "Create two teams consisting of players in your current channel",
-		},
-		withPrefix("elo"): {
-			Handle: func(context *bot.Context, args []string) error {
-				aoe2NetApi := aoe2.New(logger)
+				fullLobbyId := strings.Split(args[0], "/")
+				lobbyId := fullLobbyId[len(fullLobbyId)-1]
 
-				discordAPI := discord.New(session)
+				librematchApi := librematch.New(logger)
 
-				handler := elo.New(aoe2NetApi, mapper, logger)
+				handler := balance.New(librematchApi, discordAPI, logger)
 
-				rating, err := handler.Handle(context)
+				teams, err := handler.Handle(context, lobbyId)
 
-				if err == nil {
-					discordAPI.ChannelMessageSend(context.ChannelId, fmt.Sprintf("Your rating is %v", rating))
-
-					return nil
+				if err != nil {
+					return handleError(err, context.ChannelId, discordAPI)
 				}
 
-				return handleError(err, context.ChannelId, discordAPI)
+				var sb strings.Builder
+				for teamNumber, team := range teams {
+					players := team.Players
 
+					sb.WriteString(fmt.Sprintf("Team %d:\n", teamNumber+1))
+					for _, player := range players {
+						s := fmt.Sprintf("%s (%d)\n", player.DiscordName, player.Rating)
+						sb.WriteString(s)
+					}
+					sb.WriteString("\n")
+				}
+
+				diff := abs(int(teams[0].ELO) - int(teams[1].ELO))
+				diffStr := fmt.Sprintf("ELO difference: %d\n", diff)
+				sb.WriteString(diffStr)
+
+				discordAPI.ChannelMessageSend(context.ChannelId, sb.String())
+
+				return nil
 			},
-			Hint: "Get your current 1v1 ELO",
+			Hint: "Create two teams of players in a lobby",
 		},
 	}
+}
+
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
 }
 
 func withPrefix(cmd string) string {
