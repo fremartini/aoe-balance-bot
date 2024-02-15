@@ -4,6 +4,7 @@ import (
 	"aoe-bot/internal/bot"
 	"aoe-bot/internal/config"
 	"aoe-bot/internal/logger"
+	"fmt"
 )
 
 func main() {
@@ -23,5 +24,7 @@ func main() {
 
 	commands := New(b.Session, logger)
 
-	b.Run(commands)
+	fmt.Println(commands)
+
+	//b.Run(commands)
 }
