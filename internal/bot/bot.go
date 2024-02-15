@@ -48,6 +48,7 @@ func (b *bot) Run(commands map[string]Command) {
 	m := http.NewServeMux()
 	s := http.Server{Addr: ":8080", Handler: m}
 	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		b.logger.Info("Received ping")
 		w.Write([]byte("I'm alive"))
 	})
 
