@@ -3,6 +3,7 @@ package bot
 import (
 	"aoe-bot/internal/logger"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"strings"
@@ -43,6 +44,16 @@ func (b *bot) Run(commands map[string]Command) {
 
 	b.Session.Open()
 	defer b.Session.Close()
+
+	m := http.NewServeMux()
+	s := http.Server{Addr: ":8080", Handler: m}
+	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("I'm alive"))
+	})
+
+	if err := s.ListenAndServe(); err != nil {
+		panic(err)
+	}
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
