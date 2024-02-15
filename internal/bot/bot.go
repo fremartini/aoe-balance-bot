@@ -76,7 +76,6 @@ func (b *bot) onMessage(session *discordgo.Session, message *discordgo.MessageCr
 	command, ok := b.commands[action]
 
 	if !ok {
-		session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("Unrecognized command '%s'", action))
 		return
 	}
 
