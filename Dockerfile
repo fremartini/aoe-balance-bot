@@ -19,4 +19,4 @@ WORKDIR /app
 
 COPY --from=build /app/cmd .
 
-ENTRYPOINT ["./cmd"]
+CMD ["./cmd"]
