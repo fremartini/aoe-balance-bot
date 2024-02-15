@@ -59,8 +59,6 @@ func (b *bot) onMessage(session *discordgo.Session, message *discordgo.MessageCr
 
 	action := split[0]
 
-	b.logger.Infof("Handling action: %s", action)
-
 	if action == "!help" {
 		s := strings.Builder{}
 
@@ -78,6 +76,8 @@ func (b *bot) onMessage(session *discordgo.Session, message *discordgo.MessageCr
 	if !ok {
 		return
 	}
+
+	b.logger.Infof("Handling action: %s", action)
 
 	context := &Context{
 		UserId:    message.Author.ID,
