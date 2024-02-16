@@ -2,6 +2,7 @@ package main
 
 import (
 	"aoe-bot/internal/bot"
+	"aoe-bot/internal/cache"
 	"aoe-bot/internal/commands/balance"
 	"aoe-bot/internal/discord"
 	internalErrors "aoe-bot/internal/errors"
@@ -18,7 +19,8 @@ const prefix = "!"
 
 func New(
 	session *discordgo.Session,
-	logger *logger.Logger) map[string]bot.Command {
+	logger *logger.Logger,
+	playerCache *cache.Cache[uint, *librematch.Player]) map[string]bot.Command {
 	return map[string]bot.Command{
 		withPrefix("balance"): {
 			Handle: func(context *bot.Context, args []string) error {
@@ -32,7 +34,7 @@ func New(
 				fullLobbyId := strings.Split(args[0], "/")
 				lobbyId := fullLobbyId[len(fullLobbyId)-1]
 
-				librematchApi := librematch.New(logger)
+				librematchApi := librematch.New(logger, playerCache)
 
 				handler := balance.New(librematchApi, discordAPI, logger)
 

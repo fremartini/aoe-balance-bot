@@ -1,6 +1,7 @@
 package librematch
 
 import (
+	"aoe-bot/internal/cache"
 	"aoe-bot/internal/errors"
 	"aoe-bot/internal/list"
 	"aoe-bot/internal/logger"
@@ -12,13 +13,15 @@ import (
 
 type api struct {
 	logger *logger.Logger
+	cache  *cache.Cache[uint, *Player]
 }
 
 const base_url = "https://aoe-api.reliclink.com"
 
-func New(logger *logger.Logger) *api {
+func New(logger *logger.Logger, cache *cache.Cache[uint, *Player]) *api {
 	return &api{
 		logger: logger,
+		cache:  cache,
 	}
 }
 
@@ -61,6 +64,15 @@ type playerResponse struct {
 }
 
 func (a *api) GetPlayer(playerId uint) (*Player, error) {
+
+	// cache lookup
+	p, exists := a.cache.Contains(playerId)
+
+	if exists {
+		a.logger.Infof("Found %d in cache (%s)", playerId, (*p).Alias)
+		return *p, nil
+	}
+
 	url := fmt.Sprintf("https://aoe-api.reliclink.com/community/leaderboard/GetPersonalStat?title=age2&profile_ids=[\"%d\"]", playerId)
 
 	resp, err := http.Get(url)
@@ -109,6 +121,9 @@ func (a *api) GetPlayer(playerId uint) (*Player, error) {
 		Alias:     firstStatGroup.Members[0].Alias,
 		Rating:    rating,
 	}
+
+	a.logger.Infof("Inserted %d into cache (%s)", playerId, player.Alias)
+	a.cache.Insert(playerId, player)
 
 	return player, nil
 }
