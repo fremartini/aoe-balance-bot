@@ -1,5 +1,6 @@
 package librematch
 
 type LeaderboardStats struct {
-	Rating uint `json:"rating"`
+	LeaderboardId uint `json:"leaderboard_id"`
+	Rating        uint `json:"rating"`
 }

@@ -5,6 +5,7 @@ import (
 	"aoe-bot/internal/discord"
 	"aoe-bot/internal/errors"
 	"aoe-bot/internal/librematch"
+	"aoe-bot/internal/list"
 	"aoe-bot/internal/logger"
 	"cmp"
 	"fmt"
@@ -47,7 +48,7 @@ func (h *handler) Handle(context *bot.Context, lobbyId string) ([]*Team, error) 
 		return nil, err
 	}
 
-	lobby, _, found := firstWhere(lobbies, func(lobby *librematch.Lobby) bool {
+	lobby, _, found := list.FirstWhere(lobbies, func(lobby *librematch.Lobby) bool {
 		s := fmt.Sprintf("%d", lobby.Id)
 		return s == lobbyId
 	})
@@ -80,16 +81,6 @@ func (h *handler) Handle(context *bot.Context, lobbyId string) ([]*Team, error) 
 	t1, t2 := createTeams(players)
 
 	return []*Team{t1, t2}, nil
-}
-
-func firstWhere[T any](iter []T, predicate func(T) bool) (*T, int, bool) {
-	for i, t := range iter {
-		if predicate(t) {
-			return &t, i, true
-		}
-	}
-
-	return nil, 0, false
 }
 
 func createTeams(players []*Player) (*Team, *Team) {

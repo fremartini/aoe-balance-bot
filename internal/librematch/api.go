@@ -2,6 +2,7 @@ package librematch
 
 import (
 	"aoe-bot/internal/errors"
+	"aoe-bot/internal/list"
 	"aoe-bot/internal/logger"
 	"encoding/json"
 	"fmt"
@@ -88,8 +89,18 @@ func (a *api) GetPlayer(playerId uint) (*Player, error) {
 	firstStatGroup := response.StatGroups[0]
 
 	var rating uint = 1000
+
 	if len(response.LeaderboardStats) > 0 {
-		rating = response.LeaderboardStats[0].Rating
+		// player has played a ranked 1v1 match
+		_1v1stats, _, exists := list.FirstWhere(response.LeaderboardStats, func(leaderboardStats *LeaderboardStats) bool {
+			return leaderboardStats.LeaderboardId == 3
+		})
+
+		if exists {
+			rating = (*_1v1stats).Rating
+		} else {
+			rating = response.LeaderboardStats[0].Rating
+		}
 	}
 
 	player := &Player{
