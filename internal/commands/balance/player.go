@@ -1,6 +1,6 @@
 package balance
 
 type Player struct {
-	DiscordName string
-	Rating      uint
+	Name   string
+	Rating uint
 }

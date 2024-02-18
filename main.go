@@ -4,7 +4,7 @@ import (
 	"aoe-bot/internal/bot"
 	"aoe-bot/internal/cache"
 	"aoe-bot/internal/config"
-	"aoe-bot/internal/librematch"
+	"aoe-bot/internal/domain"
 	"aoe-bot/internal/logger"
 )
 
@@ -23,7 +23,7 @@ func main() {
 		panic(err)
 	}
 
-	playerCache := cache.New[uint, *librematch.Player]()
+	playerCache := cache.New[uint, *domain.Player]()
 
 	commands := New(b.Session, logger, playerCache)
 
