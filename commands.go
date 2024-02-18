@@ -5,6 +5,7 @@ import (
 	"aoe-bot/internal/cache"
 	"aoe-bot/internal/commands/balance"
 	"aoe-bot/internal/discord"
+	"aoe-bot/internal/domain"
 	internalErrors "aoe-bot/internal/errors"
 	"aoe-bot/internal/librematch"
 	"aoe-bot/internal/logger"
@@ -20,7 +21,7 @@ const prefix = "!"
 func New(
 	session *discordgo.Session,
 	logger *logger.Logger,
-	playerCache *cache.Cache[uint, *librematch.Player]) map[string]bot.Command {
+	playerCache *cache.Cache[uint, *domain.Player]) map[string]bot.Command {
 	return map[string]bot.Command{
 		withPrefix("balance"): {
 			Handle: func(context *bot.Context, args []string) error {
@@ -50,7 +51,7 @@ func New(
 
 					sb.WriteString(fmt.Sprintf("Team %d:\n", teamNumber+1))
 					for _, player := range players {
-						s := fmt.Sprintf("%s (%d)\n", player.DiscordName, player.Rating)
+						s := fmt.Sprintf("%s (%d)\n", player.Name, player.Rating)
 						sb.WriteString(s)
 					}
 					sb.WriteString("\n")

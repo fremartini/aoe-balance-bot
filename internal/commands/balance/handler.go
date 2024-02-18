@@ -3,8 +3,8 @@ package balance
 import (
 	"aoe-bot/internal/bot"
 	"aoe-bot/internal/discord"
+	"aoe-bot/internal/domain"
 	"aoe-bot/internal/errors"
-	"aoe-bot/internal/librematch"
 	"aoe-bot/internal/list"
 	"aoe-bot/internal/logger"
 	"cmp"
@@ -13,8 +13,8 @@ import (
 )
 
 type dataProvider interface {
-	GetLobbies() ([]*librematch.Lobby, error)
-	GetPlayer(playerId uint) (*librematch.Player, error)
+	GetLobbies() ([]*domain.Lobby, error)
+	GetPlayer(playerId uint) (*domain.Player, error)
 }
 
 type discordInfoProvider interface {
@@ -48,7 +48,7 @@ func (h *handler) Handle(context *bot.Context, lobbyId string) ([]*Team, error) 
 		return nil, err
 	}
 
-	lobby, _, found := list.FirstWhere(lobbies, func(lobby *librematch.Lobby) bool {
+	lobby, found := list.FirstWhere(lobbies, func(lobby *domain.Lobby) bool {
 		s := fmt.Sprintf("%d", lobby.Id)
 		return s == lobbyId
 	})
@@ -58,23 +58,28 @@ func (h *handler) Handle(context *bot.Context, lobbyId string) ([]*Team, error) 
 		return nil, errors.NewApplicationError(e)
 	}
 
-	members := (**lobby).MatchMembers
+	memberIds := (**lobby).Members
 
-	h.logger.Infof("Found lobby with id %s. It has %d players", lobbyId, len(members))
+	h.logger.Infof("Found lobby with id %s. It has %d players", lobbyId, len(memberIds))
 
 	players := []*Player{}
-	for _, member := range members {
-		p, err := h.dataProvider.GetPlayer(member.ProfileId)
+	for _, memberId := range memberIds {
+		p, err := h.dataProvider.GetPlayer(memberId)
 
 		if err != nil {
 			h.logger.Warnf("Error while fetching player: %s", err)
 		}
 
-		h.logger.Infof("Got data for profile id %d. Name %s, rating %d", member.ProfileId, p.Alias, p.Rating)
+		h.logger.Infof("Got data for profile id %d. Name %s", memberId, p.Name)
+
+		if p.Rating_1v1 == nil {
+			var defaultElo uint = 1000
+			p.Rating_1v1 = &defaultElo
+		}
 
 		players = append(players, &Player{
-			Rating:      p.Rating,
-			DiscordName: p.Alias,
+			Rating: *p.Rating_1v1,
+			Name:   p.Name,
 		})
 	}
 
