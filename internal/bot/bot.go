@@ -6,15 +6,17 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"regexp"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
 )
 
 type bot struct {
-	logger   *logger.Logger
-	commands map[string]Command
-	Session  *discordgo.Session
+	logger           *logger.Logger
+	commands         map[string]Command
+	Session          *discordgo.Session
+	aoe2lobbyIdRegex *regexp.Regexp
 }
 
 func New(
@@ -27,9 +29,12 @@ func New(
 		return nil, err
 	}
 
+	r := regexp.MustCompile(`aoe2de:\/\/0/\d*`)
+
 	return &bot{
-		logger:  logger,
-		Session: discord,
+		logger:           logger,
+		Session:          discord,
+		aoe2lobbyIdRegex: r,
 	}, nil
 }
 
@@ -67,9 +72,9 @@ func (b *bot) onMessage(session *discordgo.Session, message *discordgo.MessageCr
 		return
 	}
 
-	split := strings.Split(message.Content, " ")
+	args := strings.Split(message.Content, " ")
 
-	action := split[0]
+	action := args[0]
 
 	if action == "!help" {
 		s := strings.Builder{}
@@ -83,13 +88,22 @@ func (b *bot) onMessage(session *discordgo.Session, message *discordgo.MessageCr
 		return
 	}
 
+	if b.aoe2lobbyIdRegex.MatchString(action) {
+		// user pasted an aoe2 lobby id into the chat. Treat it as !balance command
+		groups := b.aoe2lobbyIdRegex.FindStringSubmatch(action)
+
+		action = "!balance"
+
+		args = []string{args[0], groups[0]}
+	}
+
 	command, ok := b.commands[action]
 
 	if !ok {
 		return
 	}
 
-	b.logger.Infof("Handling action: %s", action)
+	b.logger.Infof("Handling action: %s %s", action, args[1:])
 
 	context := &Context{
 		UserId:    message.Author.ID,
@@ -97,7 +111,7 @@ func (b *bot) onMessage(session *discordgo.Session, message *discordgo.MessageCr
 		ServerId:  message.GuildID,
 	}
 
-	if err := command.Handle(context, split[1:]); err != nil {
+	if err := command.Handle(context, args[1:]); err != nil {
 		b.logger.Fatal(err.Error())
 	}
 }
