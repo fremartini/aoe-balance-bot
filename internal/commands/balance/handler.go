@@ -10,42 +10,50 @@ import (
 	"cmp"
 	"fmt"
 	"slices"
+	"strings"
 )
 
-type dataProvider interface {
+type gameDataProvider interface {
 	GetLobbies() ([]*domain.Lobby, error)
 	GetPlayer(playerId uint) (*domain.Player, error)
 }
 
-type discordInfoProvider interface {
+type userDataProvider interface {
 	FindUserVoiceChannel(guildId, userid string) (string, error)
 	FindUsersInVoiceChannel(serverId, channelId string) ([]*discord.User, error)
 }
 
+type messageProvider interface {
+	ChannelMessageSend(channelID, content string)
+}
+
 type handler struct {
-	dataProvider        dataProvider
-	discordInfoProvider discordInfoProvider
+	dataProvider        gameDataProvider
+	discordInfoProvider userDataProvider
+	messageProvider     messageProvider
 	logger              *logger.Logger
 }
 
 func New(
-	dataProvider dataProvider,
-	discordInfoProvider discordInfoProvider,
+	gameDataProvider gameDataProvider,
+	userDataProvider userDataProvider,
+	messageProvider messageProvider,
 	logger *logger.Logger) *handler {
 	return &handler{
-		dataProvider:        dataProvider,
-		discordInfoProvider: discordInfoProvider,
+		dataProvider:        gameDataProvider,
+		discordInfoProvider: userDataProvider,
+		messageProvider:     messageProvider,
 		logger:              logger,
 	}
 }
 
-func (h *handler) Handle(context *bot.Context, lobbyId string) ([]*Team, error) {
+func (h *handler) Handle(context *bot.Context, lobbyId string) error {
 	h.logger.Infof("Trying to find lobby with id %s", lobbyId)
 
 	lobbies, err := h.dataProvider.GetLobbies()
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	lobby, found := list.FirstWhere(lobbies, func(lobby *domain.Lobby) bool {
@@ -55,7 +63,7 @@ func (h *handler) Handle(context *bot.Context, lobbyId string) ([]*Team, error) 
 
 	if !found {
 		e := fmt.Sprintf("Lobby id %s not found", lobbyId)
-		return nil, errors.NewApplicationError(e)
+		return errors.NewApplicationError(e)
 	}
 
 	memberIds := (**lobby).Members
@@ -85,7 +93,9 @@ func (h *handler) Handle(context *bot.Context, lobbyId string) ([]*Team, error) 
 
 	t1, t2 := createTeams(players)
 
-	return []*Team{t1, t2}, nil
+	h.printTeams(*context, []*Team{t1, t2})
+
+	return nil
 }
 
 func createTeams(players []*Player) (*Team, *Team) {
@@ -113,4 +123,31 @@ func createTeams(players []*Player) (*Team, *Team) {
 	t2.ELO = t2Rating
 
 	return t1, t2
+}
+
+func (h *handler) printTeams(context bot.Context, teams []*Team) {
+	var sb strings.Builder
+	for teamNumber, team := range teams {
+		players := team.Players
+
+		sb.WriteString(fmt.Sprintf("Team %d:\n", teamNumber+1))
+		for _, player := range players {
+			s := fmt.Sprintf("%s (%d)\n", player.Name, player.Rating)
+			sb.WriteString(s)
+		}
+		sb.WriteString("\n")
+	}
+
+	diff := abs(int(teams[0].ELO) - int(teams[1].ELO))
+	diffStr := fmt.Sprintf("ELO difference: %d\n", diff)
+	sb.WriteString(diffStr)
+
+	h.messageProvider.ChannelMessageSend(context.ChannelId, sb.String())
+}
+
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
 }

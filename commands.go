@@ -37,31 +37,13 @@ func New(
 
 				librematchApi := librematch.New(logger, playerCache)
 
-				handler := balance.New(librematchApi, discordAPI, logger)
+				handler := balance.New(librematchApi, discordAPI, discordAPI, logger)
 
-				teams, err := handler.Handle(context, lobbyId)
+				err := handler.Handle(context, lobbyId)
 
 				if err != nil {
 					return handleError(err, context.ChannelId, discordAPI)
 				}
-
-				var sb strings.Builder
-				for teamNumber, team := range teams {
-					players := team.Players
-
-					sb.WriteString(fmt.Sprintf("Team %d:\n", teamNumber+1))
-					for _, player := range players {
-						s := fmt.Sprintf("%s (%d)\n", player.Name, player.Rating)
-						sb.WriteString(s)
-					}
-					sb.WriteString("\n")
-				}
-
-				diff := abs(int(teams[0].ELO) - int(teams[1].ELO))
-				diffStr := fmt.Sprintf("ELO difference: %d\n", diff)
-				sb.WriteString(diffStr)
-
-				discordAPI.ChannelMessageSend(context.ChannelId, sb.String())
 
 				return nil
 			},
@@ -70,22 +52,15 @@ func New(
 	}
 }
 
-func abs(x int) int {
-	if x < 0 {
-		return -x
-	}
-	return x
-}
-
 func withPrefix(cmd string) string {
 	return fmt.Sprintf("%s%s", prefix, cmd)
 }
 
-type MessageSender interface {
+type messageSender interface {
 	ChannelMessageSend(channelID, content string)
 }
 
-func handleError(err error, channelId string, api MessageSender) error {
+func handleError(err error, channelId string, api messageSender) error {
 	var serverErr *internalErrors.ServerError
 	if errors.As(err, &serverErr) {
 		api.ChannelMessageSend(channelId, "Server error")
