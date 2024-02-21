@@ -139,7 +139,13 @@ func (h *handler) printOutput(context bot.Context, teams []*Team, lobbyId string
 	}
 
 	diff := abs(int(teams[0].ELO) - int(teams[1].ELO))
-	diffStr := fmt.Sprintf("ELO difference: %d\n\n", diff)
+
+	highestEloTeam := 1
+	if teams[1].ELO > teams[0].ELO {
+		highestEloTeam = 2
+	}
+
+	diffStr := fmt.Sprintf("ELO difference: %d in favor of team %d\n\n", diff, highestEloTeam)
 	sb.WriteString(diffStr)
 
 	joinStr := fmt.Sprintf(`[Click here to join](https://aoe2lobby.com/j/%s)`, lobbyId)
