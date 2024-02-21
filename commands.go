@@ -39,9 +39,7 @@ func New(
 
 				handler := balance.New(librematchApi, discordAPI, discordAPI, logger)
 
-				err := handler.Handle(context, lobbyId)
-
-				if err != nil {
+				if err := handler.Handle(context, lobbyId); err != nil {
 					return handleError(err, context.ChannelId, discordAPI)
 				}
 

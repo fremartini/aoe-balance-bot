@@ -93,7 +93,7 @@ func (h *handler) Handle(context *bot.Context, lobbyId string) error {
 
 	t1, t2 := createTeams(players)
 
-	h.printTeams(*context, []*Team{t1, t2})
+	h.printOutput(*context, []*Team{t1, t2}, lobbyId)
 
 	return nil
 }
@@ -125,7 +125,7 @@ func createTeams(players []*Player) (*Team, *Team) {
 	return t1, t2
 }
 
-func (h *handler) printTeams(context bot.Context, teams []*Team) {
+func (h *handler) printOutput(context bot.Context, teams []*Team, lobbyId string) {
 	var sb strings.Builder
 	for teamNumber, team := range teams {
 		players := team.Players
@@ -139,8 +139,11 @@ func (h *handler) printTeams(context bot.Context, teams []*Team) {
 	}
 
 	diff := abs(int(teams[0].ELO) - int(teams[1].ELO))
-	diffStr := fmt.Sprintf("ELO difference: %d\n", diff)
+	diffStr := fmt.Sprintf("ELO difference: %d\n\n", diff)
 	sb.WriteString(diffStr)
+
+	joinStr := fmt.Sprintf(`[Click here to join](https://aoe2lobby.com/j/%s)`, lobbyId)
+	sb.WriteString(joinStr)
 
 	h.messageProvider.ChannelMessageSend(context.ChannelId, sb.String())
 }
