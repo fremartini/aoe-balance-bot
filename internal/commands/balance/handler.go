@@ -7,9 +7,7 @@ import (
 	"aoe-bot/internal/errors"
 	"aoe-bot/internal/list"
 	"aoe-bot/internal/logger"
-	"cmp"
 	"fmt"
-	"slices"
 	"strings"
 )
 
@@ -91,38 +89,11 @@ func (h *handler) Handle(context *bot.Context, lobbyId string) error {
 		})
 	}
 
-	t1, t2 := createTeams(players)
+	t1, t2 := CreateTeamsBruteForce(players)
 
 	h.printOutput(*context, []*Team{t1, t2}, lobbyId)
 
 	return nil
-}
-
-func createTeams(players []*Player) (*Team, *Team) {
-	t1 := &Team{}
-	t2 := &Team{}
-
-	var t1Rating uint = 0
-	var t2Rating uint = 0
-
-	slices.SortFunc(players, func(a, b *Player) int {
-		return cmp.Compare(b.Rating, a.Rating)
-	})
-
-	for _, player := range players {
-		if t1Rating < t2Rating {
-			t1.Players = append(t1.Players, player)
-			t1Rating += player.Rating
-		} else {
-			t2.Players = append(t2.Players, player)
-			t2Rating += player.Rating
-		}
-	}
-
-	t1.ELO = t1Rating
-	t2.ELO = t2Rating
-
-	return t1, t2
 }
 
 func (h *handler) printOutput(context bot.Context, teams []*Team, lobbyId string) {
