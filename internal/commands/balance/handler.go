@@ -98,6 +98,21 @@ func (h *handler) Handle(context *bot.Context, lobbyId string) error {
 
 func (h *handler) printOutput(context bot.Context, teams []*Team, lobbyId string) {
 	var sb strings.Builder
+
+	t1 := teams[0]
+	t2 := teams[1]
+
+	totalLobbyMembers := len(t1.Players) + len(t2.Players)
+
+	if totalLobbyMembers == 1 {
+		// only one person in the lobby
+		joinStr := fmt.Sprintf(`New lobby [Click here to join](https://aoe2lobby.com/j/%s)`, lobbyId)
+		sb.WriteString(joinStr)
+
+		h.messageProvider.ChannelMessageSend(context.ChannelId, sb.String())
+		return
+	}
+
 	for teamNumber, team := range teams {
 		players := team.Players
 
@@ -109,10 +124,10 @@ func (h *handler) printOutput(context bot.Context, teams []*Team, lobbyId string
 		sb.WriteString("\n")
 	}
 
-	diff := abs(int(teams[0].ELO) - int(teams[1].ELO))
+	diff := abs(int(t1.ELO) - int(t2.ELO))
 
 	highestEloTeam := 1
-	if teams[1].ELO > teams[0].ELO {
+	if t1.ELO > t2.ELO {
 		highestEloTeam = 2
 	}
 
