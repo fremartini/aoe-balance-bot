@@ -111,35 +111,28 @@ func (h *handler) printOutput(context bot.Context, teams []*Team, lobbyId string
 
 	totalLobbyMembers := len(t1.Players) + len(t2.Players)
 
-	if totalLobbyMembers == 1 {
-		// only one person in the lobby
-		joinStr := fmt.Sprintf(`[Click here to join](https://aoe2lobby.com/j/%s)`, lobbyId)
-		sb.WriteString(joinStr)
+	if totalLobbyMembers > 1 {
+		for teamNumber, team := range teams {
+			players := team.Players
 
-		h.messageProvider.ChannelMessageSendReply(context.ChannelId, sb.String(), context.MessageId, context.GuildId)
-		return
-	}
-
-	for teamNumber, team := range teams {
-		players := team.Players
-
-		sb.WriteString(fmt.Sprintf("**Team %d:**\n", teamNumber+1))
-		for _, player := range players {
-			s := fmt.Sprintf("%s (%d)\n", player.Name, player.Rating)
-			sb.WriteString(s)
+			sb.WriteString(fmt.Sprintf("**Team %d:**\n", teamNumber+1))
+			for _, player := range players {
+				s := fmt.Sprintf("%s (%d)\n", player.Name, player.Rating)
+				sb.WriteString(s)
+			}
+			sb.WriteString("\n")
 		}
-		sb.WriteString("\n")
+
+		diff := abs(int(t1.ELO) - int(t2.ELO))
+
+		highestEloTeam := 1
+		if t1.ELO > t2.ELO {
+			highestEloTeam = 2
+		}
+
+		diffStr := fmt.Sprintf("ELO difference: **%d** in favor of **Team %d**\n\n", diff, highestEloTeam)
+		sb.WriteString(diffStr)
 	}
-
-	diff := abs(int(t1.ELO) - int(t2.ELO))
-
-	highestEloTeam := 1
-	if t1.ELO > t2.ELO {
-		highestEloTeam = 2
-	}
-
-	diffStr := fmt.Sprintf("ELO difference: **%d** in favor of **Team %d**\n\n", diff, highestEloTeam)
-	sb.WriteString(diffStr)
 
 	joinStr := fmt.Sprintf(`[Click here to join](https://aoe2lobby.com/j/%s)`, lobbyId)
 	sb.WriteString(joinStr)

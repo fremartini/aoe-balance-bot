@@ -26,7 +26,7 @@ func New(
 				discordAPI := discord.New(session)
 
 				if len(args) == 0 {
-					discordAPI.ChannelMessageSend(context.ChannelId, "Missing game id")
+					discordAPI.ChannelMessageSendReply(context.ChannelId, "Missing game id", context.MessageId, context.GuildId)
 					return
 				}
 
