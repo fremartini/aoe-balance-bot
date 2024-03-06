@@ -6,10 +6,8 @@ import (
 	"aoe-bot/internal/commands/balance"
 	"aoe-bot/internal/discord"
 	"aoe-bot/internal/domain"
-	internalErrors "aoe-bot/internal/errors"
 	"aoe-bot/internal/librematch"
 	"aoe-bot/internal/logger"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -24,12 +22,12 @@ func New(
 	playerCache *cache.Cache[uint, *domain.Player]) map[string]bot.Command {
 	return map[string]bot.Command{
 		withPrefix("balance"): {
-			Handle: func(context *bot.Context, args []string) error {
+			Handle: func(context *bot.Context, args []string) {
 				discordAPI := discord.New(session)
 
 				if len(args) == 0 {
 					discordAPI.ChannelMessageSend(context.ChannelId, "Missing game id")
-					return nil
+					return
 				}
 
 				fullLobbyId := strings.Split(args[0], "/")
@@ -39,11 +37,7 @@ func New(
 
 				handler := balance.New(librematchApi, discordAPI, discordAPI, logger)
 
-				if err := handler.Handle(context, lobbyId); err != nil {
-					return handleError(err, context.ChannelId, discordAPI)
-				}
-
-				return nil
+				handler.Handle(context, lobbyId)
 			},
 			Hint: "Create two teams of players in a lobby",
 		},
@@ -52,33 +46,4 @@ func New(
 
 func withPrefix(cmd string) string {
 	return fmt.Sprintf("%s%s", prefix, cmd)
-}
-
-type messageSender interface {
-	ChannelMessageSend(channelID, content string)
-}
-
-func handleError(err error, channelId string, api messageSender) error {
-	var serverErr *internalErrors.ServerError
-	if errors.As(err, &serverErr) {
-		api.ChannelMessageSend(channelId, "Server error")
-
-		return nil
-	}
-
-	var notFoundErr *internalErrors.NotFoundError
-	if errors.As(err, &notFoundErr) {
-		api.ChannelMessageSend(channelId, "Unknown player")
-
-		return nil
-	}
-
-	var applicationErr *internalErrors.ApplicationError
-	if errors.As(err, &applicationErr) {
-		api.ChannelMessageSend(channelId, applicationErr.Message)
-
-		return nil
-	}
-
-	return err
 }

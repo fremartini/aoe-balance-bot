@@ -20,6 +20,14 @@ func (p *api) ChannelMessageSend(channelID, content string) {
 	p.session.ChannelMessageSend(channelID, content)
 }
 
+func (p *api) ChannelMessageSendReply(channelID, content, messageId, guildId string) {
+	p.session.ChannelMessageSendReply(channelID, content, &discordgo.MessageReference{
+		MessageID: messageId,
+		ChannelID: channelID,
+		GuildID:   guildId,
+	})
+}
+
 func (p *api) FindUserVoiceChannel(serverId, userId string) (string, error) {
 	guild, err := p.session.State.Guild(serverId)
 

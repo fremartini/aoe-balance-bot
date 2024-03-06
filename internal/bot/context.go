@@ -3,5 +3,6 @@ package bot
 type Context struct {
 	ChannelId string
 	UserId    string
-	ServerId  string
+	GuildId   string
+	MessageId string
 }

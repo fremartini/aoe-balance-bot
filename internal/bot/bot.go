@@ -108,10 +108,9 @@ func (b *bot) onMessage(session *discordgo.Session, message *discordgo.MessageCr
 	context := &Context{
 		UserId:    message.Author.ID,
 		ChannelId: message.ChannelID,
-		ServerId:  message.GuildID,
+		GuildId:   message.GuildID,
+		MessageId: message.ID,
 	}
 
-	if err := command.Handle(context, args[1:]); err != nil {
-		b.logger.Fatal(err.Error())
-	}
+	command.Handle(context, args[1:])
 }
