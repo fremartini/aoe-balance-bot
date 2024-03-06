@@ -123,12 +123,12 @@ func (h *handler) printOutput(context bot.Context, teams []*Team, lobbyId string
 			sb.WriteString("\n")
 		}
 
-		diff := abs(int(t1.ELO) - int(t2.ELO))
-
 		highestEloTeam := 1
-		if t1.ELO > t2.ELO {
+		if t2.ELO > t1.ELO {
 			highestEloTeam = 2
 		}
+
+		diff := abs(int(t1.ELO) - int(t2.ELO))
 
 		diffStr := fmt.Sprintf("ELO difference: **%d** in favor of **Team %d**\n\n", diff, highestEloTeam)
 		sb.WriteString(diffStr)
