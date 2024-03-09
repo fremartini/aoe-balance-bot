@@ -54,8 +54,6 @@ func (b *bot) Run(commands map[*regexp.Regexp]Command) {
 		panic(err)
 	}
 
-	b.logger.Info("Started bot")
-
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 	<-c
