@@ -17,6 +17,8 @@ func main() {
 
 	logger := logger.New(config.LogLevel)
 
+	logger.Infof("Running with log level %d", config.LogLevel)
+
 	b, err := bot.New(logger, config.Token)
 
 	if err != nil {

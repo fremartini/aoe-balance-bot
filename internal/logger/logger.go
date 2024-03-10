@@ -15,28 +15,40 @@ func New(level uint) *Logger {
 	}
 }
 
-func (*Logger) Infof(format string, a ...any) {
-	printf("INFO", format, a...)
+func (l *Logger) Infof(format string, a ...any) {
+	if l.level >= INFO {
+		printf("INFO", format, a...)
+	}
 }
 
-func (*Logger) Info(s string) {
-	print("INFO", s)
+func (l *Logger) Info(s string) {
+	if l.level >= INFO {
+		print("INFO", s)
+	}
 }
 
-func (*Logger) Warnf(format string, a ...any) {
-	printf("WARN", format, a...)
+func (l *Logger) Warnf(format string, a ...any) {
+	if l.level >= WARN {
+		printf("WARN", format, a...)
+	}
 }
 
-func (*Logger) Warn(s string) {
-	print("WARN", s)
+func (l *Logger) Warn(s string) {
+	if l.level >= WARN {
+		print("WARN", s)
+	}
 }
 
-func (*Logger) Fatalf(format string, a ...any) {
-	printf("FATAL", format, a...)
+func (l *Logger) Fatalf(format string, a ...any) {
+	if l.level >= FATAL {
+		printf("FATAL", format, a...)
+	}
 }
 
-func (*Logger) Fatal(s string) {
-	print("FATAL", s)
+func (l *Logger) Fatal(s string) {
+	if l.level >= FATAL {
+		print("FATAL", s)
+	}
 }
 
 func printf(prefix, format string, a ...any) {
