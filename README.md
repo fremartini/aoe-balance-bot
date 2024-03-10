@@ -9,6 +9,6 @@ A Discord bot written in Go to balance AoE2 DE lobbies using in-game id's.
 The bot requires the following environment variables to be set:
 - `token`: Discord bot token
 - `logLevel` Level to filter logs displayed in the console 
-    - 0: `INFO`
+    - 0: `FATAL`
     - 1: `WARN`
-    - 2: `FATAL`
+    - 2: `INFO`
