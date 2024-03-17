@@ -68,6 +68,7 @@ func (a *api) GetLobbies() ([]*domain.Lobby, error) {
 
 		return &domain.Lobby{
 			Id:      lobby.Id,
+			Title:   lobby.Description,
 			Members: memberIds,
 		}
 	})

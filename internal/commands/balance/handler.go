@@ -72,7 +72,7 @@ func (h *handler) Handle(context *bot.Context, lobbyId string) {
 
 	memberIds := (**lobby).Members
 
-	h.logger.Infof("Found lobby with id %s. It has %d players", lobbyId, len(memberIds))
+	h.logger.Infof("Found lobby %s (%s). It has %d players", (*lobby).Title, lobbyId, len(memberIds))
 
 	players, err := h.dataProvider.GetPlayers(memberIds)
 
@@ -95,13 +95,13 @@ func (h *handler) Handle(context *bot.Context, lobbyId string) {
 
 	t1, t2 := CreateTeamsBruteForce(playersWithELO)
 
-	h.printOutput(*context, []*Team{t1, t2}, lobbyId)
+	h.printOutput(*context, []*Team{t1, t2}, *lobby)
 }
 
-func (h *handler) printOutput(context bot.Context, teams []*Team, lobbyId string) {
+func (h *handler) printOutput(context bot.Context, teams []*Team, lobby *domain.Lobby) {
 	var sb strings.Builder
 
-	gameIdStr := fmt.Sprintf(`Game id **%s**`, lobbyId)
+	gameIdStr := fmt.Sprintf(`Game **%s** (%d)`, lobby.Title, lobby.Id)
 	sb.WriteString(gameIdStr)
 	sb.WriteString("\n\n")
 
@@ -133,7 +133,7 @@ func (h *handler) printOutput(context bot.Context, teams []*Team, lobbyId string
 		sb.WriteString(diffStr)
 	}
 
-	joinStr := fmt.Sprintf(`[Click here to join](https://aoe2lobby.com/j/%s)`, lobbyId)
+	joinStr := fmt.Sprintf(`[Click here to join](https://aoe2lobby.com/j/%d)`, lobby.Id)
 	sb.WriteString(joinStr)
 
 	h.messageProvider.ChannelMessageSendReply(context.ChannelId, sb.String(), context.MessageId, context.GuildId)
