@@ -10,6 +10,18 @@ func FirstWhere[T any](iter []T, predicate func(T) bool) (*T, bool) {
 	return nil, false
 }
 
+func Where[T any](iter []T, predicate func(T) bool) []T {
+	toReturn := []T{}
+
+	for _, t := range iter {
+		if predicate(t) {
+			toReturn = append(toReturn, t)
+		}
+	}
+
+	return toReturn
+}
+
 func Map[T, K any](iter []T, mapper func(T) K) []K {
 	toReturn := make([]K, len(iter))
 

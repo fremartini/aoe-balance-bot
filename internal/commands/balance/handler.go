@@ -14,7 +14,7 @@ import (
 
 type gameDataProvider interface {
 	GetLobbies() ([]*domain.Lobby, error)
-	GetPlayer(playerId uint) (*domain.Player, error)
+	GetPlayers(playerIds []uint) ([]*domain.Player, error)
 }
 
 type userDataProvider interface {
@@ -63,6 +63,7 @@ func (h *handler) Handle(context *bot.Context, lobbyId string) {
 
 	if !found {
 		e := fmt.Sprintf("Public lobby %s not found", lobbyId)
+		h.logger.Info(e)
 		internalError := internalErrors.NewApplicationError(e)
 
 		h.handleError(internalError, context)
@@ -73,28 +74,26 @@ func (h *handler) Handle(context *bot.Context, lobbyId string) {
 
 	h.logger.Infof("Found lobby with id %s. It has %d players", lobbyId, len(memberIds))
 
-	players := []*Player{}
-	for _, memberId := range memberIds {
-		p, err := h.dataProvider.GetPlayer(memberId)
+	players, err := h.dataProvider.GetPlayers(memberIds)
 
-		if err != nil {
-			h.logger.Warnf("Error while fetching player: %s", err)
-		}
+	if err != nil {
+		h.handleError(err, context)
+		return
+	}
 
-		h.logger.Infof("Got data for profile id %d. Name %s", memberId, p.Name)
-
+	playersWithELO := list.Map(players, func(p *domain.Player) *Player {
 		if p.Rating_1v1 == nil {
 			var defaultElo uint = 1000
 			p.Rating_1v1 = &defaultElo
 		}
 
-		players = append(players, &Player{
+		return &Player{
 			Rating: *p.Rating_1v1,
 			Name:   p.Name,
-		})
-	}
+		}
+	})
 
-	t1, t2 := CreateTeamsBruteForce(players)
+	t1, t2 := CreateTeamsBruteForce(playersWithELO)
 
 	h.printOutput(*context, []*Team{t1, t2}, lobbyId)
 }
