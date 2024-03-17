@@ -26,7 +26,7 @@ func main() {
 		panic(err)
 	}
 
-	playerCache := cache.New[uint, *domain.Player](*config.CacheExpiryHours)
+	playerCache := cache.New[uint, *domain.Player](*config.CacheExpiryHours, logger)
 
 	commands := New(b.Session, logger, playerCache)
 

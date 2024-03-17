@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 )
 
 type api struct {
@@ -18,9 +19,9 @@ type api struct {
 }
 
 const (
-	leaderboard_1v1      = 3
-	leaderboard_teamgame = 4
-	base_url             = "https://aoe-api.reliclink.com"
+	LEADERBOARD_1V1      = 3
+	LEADERBOARD_TEAMGAME = 4
+	BASE_URL             = "https://aoe-api.reliclink.com"
 )
 
 func New(logger *logger.Logger, cache *cache.Cache[uint, *domain.Player]) *api {
@@ -35,7 +36,7 @@ type lobbyResponse struct {
 }
 
 func (a *api) GetLobbies() ([]*domain.Lobby, error) {
-	url := fmt.Sprintf("%s/community/advertisement/findAdvertisements?title=age2", base_url)
+	url := fmt.Sprintf("%s/community/advertisement/findAdvertisements?title=age2", BASE_URL)
 
 	resp, err := http.Get(url)
 
@@ -79,17 +80,17 @@ type playerResponse struct {
 	LeaderboardStats []*LeaderboardStats `json:"leaderboardStats"`
 }
 
-func (a *api) GetPlayer(playerId uint) (*domain.Player, error) {
+func (a *api) GetPlayers(playerIds []uint) ([]*domain.Player, error) {
+	playersAlreadyFetched, playerIdsToFetch := a.findKnownAndUnknownPlayers(playerIds)
 
-	// cache lookup
-	p, exists := a.cache.Contains(playerId)
-
-	if exists {
-		a.logger.Infof("Found %d in cache (%s)", playerId, (*p).Name)
-		return *p, nil
+	// all players found in cache
+	if len(playerIdsToFetch) == 0 {
+		return playersAlreadyFetched, nil
 	}
 
-	url := fmt.Sprintf("%s/community/leaderboard/GetPersonalStat?title=age2&profile_ids=[\"%d\"]", base_url, playerId)
+	idString := buildIdString(playerIdsToFetch)
+
+	url := fmt.Sprintf("%s/community/leaderboard/GetPersonalStat?title=age2&profile_ids=[%s]", BASE_URL, idString)
 
 	resp, err := http.Get(url)
 
@@ -114,39 +115,78 @@ func (a *api) GetPlayer(playerId uint) (*domain.Player, error) {
 	response := &playerResponse{}
 	json.Unmarshal(body, response)
 
+	players := list.Map(response.StatGroups, func(statGroup *StatGroup) *domain.Player {
+		statGroupMember := statGroup.Members[0]
+
+		player := parsePlayer(statGroup.Id, response.LeaderboardStats, statGroupMember)
+
+		a.cache.Insert(player.PlayerId, player)
+
+		return player
+	})
+
+	players = append(players, playersAlreadyFetched...)
+
+	return players, nil
+}
+
+func (a *api) findKnownAndUnknownPlayers(playerIds []uint) ([]*domain.Player, []uint) {
+	playersAlreadyFetched := []*domain.Player{}
+	playerIdsToFetch := []uint{}
+
+	for _, id := range playerIds {
+		player, ok := a.cache.Contains(id)
+
+		if ok {
+			playersAlreadyFetched = append(playersAlreadyFetched, *player)
+			continue
+		}
+
+		playerIdsToFetch = append(playerIdsToFetch, id)
+	}
+
+	return playersAlreadyFetched, playerIdsToFetch
+}
+
+func buildIdString(playerIds []uint) string {
+	str := list.Map(playerIds, func(id uint) string {
+		return fmt.Sprintf("%d", id)
+	})
+
+	return strings.Join(str, ",")
+}
+
+func parsePlayer(id uint, leaderboardStats []*LeaderboardStats, statGroupMember *StatGroupMember) *domain.Player {
 	var rating_1v1 *uint = nil
 	var rating_tg *uint = nil
 
-	if len(response.LeaderboardStats) > 0 {
-		stats1v1, exists := list.FirstWhere(response.LeaderboardStats, func(leaderboardStats *LeaderboardStats) bool {
-			return leaderboardStats.LeaderboardId == leaderboard_1v1
-		})
+	stats := list.Where(leaderboardStats, func(stat *LeaderboardStats) bool {
+		return stat.StatGroupId == id
+	})
 
-		if exists {
-			rating_1v1 = &(*stats1v1).Rating
-		}
+	stats1v1, exists := list.FirstWhere(stats, func(leaderboardStats *LeaderboardStats) bool {
+		return leaderboardStats.LeaderboardId == LEADERBOARD_1V1
+	})
 
-		statstg, exists := list.FirstWhere(response.LeaderboardStats, func(leaderboardStats *LeaderboardStats) bool {
-			return leaderboardStats.LeaderboardId == leaderboard_teamgame
-		})
-
-		if exists {
-			rating_tg = &(*statstg).Rating
-		}
+	if exists {
+		rating_1v1 = &(*stats1v1).Rating
 	}
 
-	firstStatGroup := response.StatGroups[0]
+	statstg, exists := list.FirstWhere(stats, func(leaderboardStats *LeaderboardStats) bool {
+		return leaderboardStats.LeaderboardId == LEADERBOARD_TEAMGAME
+	})
+
+	if exists {
+		rating_tg = &(*statstg).Rating
+	}
 
 	player := &domain.Player{
-		PlayerId:   firstStatGroup.Members[0].ProfileId,
-		SteamId:    firstStatGroup.Members[0].Name,
-		Name:       firstStatGroup.Members[0].Alias,
+		PlayerId:   statGroupMember.ProfileId,
+		SteamId:    statGroupMember.Name,
+		Name:       statGroupMember.Alias,
 		Rating_1v1: rating_1v1,
 		Rating_TG:  rating_tg,
 	}
 
-	a.logger.Infof("Inserted %d into cache (%s)", playerId, player.Name)
-	a.cache.Insert(playerId, player)
-
-	return player, nil
+	return player
 }
