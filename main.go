@@ -15,17 +15,18 @@ func main() {
 		panic(err)
 	}
 
-	logger := logger.New(config.LogLevel)
+	logger := logger.New(*config.LogLevel)
 
-	logger.Infof("Running with log level %d", config.LogLevel)
+	logger.Infof("Running with log level %d", *config.LogLevel)
+	logger.Infof("Cache entries will expire after %d hours", *config.CacheExpiryHours)
 
-	b, err := bot.New(logger, config.Token)
+	b, err := bot.New(logger, *config.Token)
 
 	if err != nil {
 		panic(err)
 	}
 
-	playerCache := cache.New[uint, *domain.Player]()
+	playerCache := cache.New[uint, *domain.Player](*config.CacheExpiryHours)
 
 	commands := New(b.Session, logger, playerCache)
 

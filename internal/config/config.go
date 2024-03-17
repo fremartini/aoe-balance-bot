@@ -9,11 +9,16 @@ import (
 )
 
 type config struct {
-	Token    string
-	LogLevel uint
+	Token            *string
+	LogLevel         *uint
+	CacheExpiryHours *uint
 }
 
-const CONFIG_FILE = ".config"
+const (
+	CONFIG_FILE                 = ".config"
+	DEF_LOG_LEVEL          uint = logger.INFO
+	DEF_CACHE_EXPIRY_HOURS uint = 24
+)
 
 func Read() (*config, error) {
 	if _, err := os.Stat(CONFIG_FILE); errors.Is(err, os.ErrNotExist) {
@@ -24,27 +29,30 @@ func Read() (*config, error) {
 }
 
 func readConfigFromEnv() (*config, error) {
-	token := os.Getenv("token")
-	logLevel := os.Getenv("logLevel")
+	tokenEnv := os.Getenv("token")
+	logLevelEnv := os.Getenv("logLevel")
+	cacheExpiryHoursEnv := os.Getenv("cacheExpiryHours")
 
-	if token == "" {
-		return nil, errors.New("token supplied")
+	if tokenEnv == "" {
+		return nil, errors.New("token not supplied")
 	}
 
-	var level uint = logger.INFO
-	if logLevel != "" {
-		l, err := parseUint(logLevel)
+	logLevel, err := uintOrDefault(logLevelEnv, DEF_LOG_LEVEL)
 
-		if err != nil {
-			return nil, err
-		}
+	if err != nil {
+		return nil, err
+	}
 
-		level = l
+	cacheExpiryHours, err := uintOrDefault(cacheExpiryHoursEnv, DEF_CACHE_EXPIRY_HOURS)
+
+	if err != nil {
+		return nil, err
 	}
 
 	return &config{
-		Token:    token,
-		LogLevel: level,
+		Token:            &tokenEnv,
+		LogLevel:         &logLevel,
+		CacheExpiryHours: &cacheExpiryHours,
 	}, nil
 }
 
@@ -56,7 +64,40 @@ func readConfigFromFile() (*config, error) {
 	}
 
 	config := &config{}
-	return config, json.Unmarshal(content, config)
+
+	err = json.Unmarshal(content, config)
+
+	if config.Token == nil {
+		return nil, errors.New("token not supplied")
+	}
+
+	if config.CacheExpiryHours == nil {
+		hrs := DEF_CACHE_EXPIRY_HOURS
+		config.CacheExpiryHours = &hrs
+	}
+
+	if config.LogLevel == nil {
+		lvl := DEF_LOG_LEVEL
+		config.LogLevel = &lvl
+	}
+
+	return config, err
+}
+
+func uintOrDefault(v string, def uint) (uint, error) {
+	if v == "" {
+		// no env value provided
+		return def, nil
+	}
+
+	// env value is provided
+	l, err := parseUint(v)
+
+	if err != nil {
+		return def, err
+	}
+
+	return l, err
 }
 
 func parseUint(s string) (uint, error) {

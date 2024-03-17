@@ -6,6 +6,7 @@ import (
 
 type Cache[T, K comparable] struct {
 	entries map[T]entry[K]
+	expiry  float64
 }
 
 type entry[T any] struct {
@@ -13,9 +14,10 @@ type entry[T any] struct {
 	value     T
 }
 
-func New[T, K comparable]() *Cache[T, K] {
+func New[T, K comparable](expiry uint) *Cache[T, K] {
 	return &Cache[T, K]{
 		entries: map[T]entry[K]{},
+		expiry:  float64(expiry),
 	}
 }
 
@@ -37,7 +39,7 @@ func (c *Cache[T, K]) Contains(key T) (*K, bool) {
 		return nil, false
 	}
 
-	if isExpired(time.Now(), value.timestamp) {
+	if c.isExpired(time.Now(), value.timestamp) {
 		delete(c.entries, key)
 		return nil, false
 	}
@@ -45,6 +47,6 @@ func (c *Cache[T, K]) Contains(key T) (*K, bool) {
 	return &value.value, true
 }
 
-func isExpired(now, timeStamp time.Time) bool {
-	return now.Sub(timeStamp).Hours() > 24
+func (c *Cache[T, K]) isExpired(now, timeStamp time.Time) bool {
+	return now.Sub(timeStamp).Hours() > c.expiry
 }
