@@ -46,7 +46,6 @@ func (b *bot) Run(commands map[*regexp.Regexp]Command) {
 	m := http.NewServeMux()
 	s := http.Server{Addr: ":8080", Handler: m}
 	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		b.logger.Info("Received ping")
 		w.Write([]byte("I'm alive"))
 	})
 
@@ -85,8 +84,6 @@ func (b *bot) onMessage(session *discordgo.Session, message *discordgo.MessageCr
 		return
 	}
 
-	b.logger.Infof("Handling action: %s %s", action, args)
-
 	context := &Context{
 		UserId:    message.Author.ID,
 		ChannelId: message.ChannelID,
@@ -96,6 +93,8 @@ func (b *bot) onMessage(session *discordgo.Session, message *discordgo.MessageCr
 
 	for k, v := range b.commands {
 		if k.MatchString(action) {
+			b.logger.Infof("Handling action: %s %s", action, args)
+
 			v.Handle(context, args)
 		}
 	}
