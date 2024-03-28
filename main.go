@@ -18,7 +18,6 @@ func main() {
 	logger := logger.New(*config.LogLevel)
 
 	logger.Infof("Running with log level %d", *config.LogLevel)
-	logger.Infof("Cache entries will expire after %d hours", *config.CacheExpiryHours)
 
 	b, err := bot.New(logger, *config.Token)
 
@@ -26,7 +25,7 @@ func main() {
 		panic(err)
 	}
 
-	playerCache := cache.New[uint, *domain.Player](*config.CacheExpiryHours, logger)
+	playerCache := cache.New[uint, *domain.Player](*config.Cache.ExpiryHours, *config.Cache.MaxSize, logger)
 
 	commands := New(b.Session, logger, playerCache)
 
