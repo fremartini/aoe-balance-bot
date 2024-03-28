@@ -9,15 +9,21 @@ import (
 )
 
 type config struct {
-	Token            *string
-	LogLevel         *uint
-	CacheExpiryHours *uint
+	Token    *string
+	LogLevel *uint
+	Cache    *cache
+}
+
+type cache struct {
+	ExpiryHours *uint
+	MaxSize     *uint
 }
 
 const (
 	CONFIG_FILE                 = ".config"
 	DEF_LOG_LEVEL          uint = logger.INFO
 	DEF_CACHE_EXPIRY_HOURS uint = 24
+	DEF_CACHE_SIZE         uint = 20
 )
 
 func Read() (*config, error) {
@@ -32,6 +38,7 @@ func readConfigFromEnv() (*config, error) {
 	tokenEnv := os.Getenv("token")
 	logLevelEnv := os.Getenv("logLevel")
 	cacheExpiryHoursEnv := os.Getenv("cacheExpiryHours")
+	cacheMaxSizeEnv := os.Getenv("cacheMaxSize")
 
 	if tokenEnv == "" {
 		return nil, errors.New("token not supplied")
@@ -49,10 +56,19 @@ func readConfigFromEnv() (*config, error) {
 		return nil, err
 	}
 
+	cacheMaxSize, err := uintOrDefault(cacheMaxSizeEnv, DEF_CACHE_SIZE)
+
+	if err != nil {
+		return nil, err
+	}
+
 	return &config{
-		Token:            &tokenEnv,
-		LogLevel:         &logLevel,
-		CacheExpiryHours: &cacheExpiryHours,
+		Token:    &tokenEnv,
+		LogLevel: &logLevel,
+		Cache: &cache{
+			ExpiryHours: &cacheExpiryHours,
+			MaxSize:     &cacheMaxSize,
+		},
 	}, nil
 }
 
@@ -71,9 +87,14 @@ func readConfigFromFile() (*config, error) {
 		return nil, errors.New("token not supplied")
 	}
 
-	if config.CacheExpiryHours == nil {
+	if config.Cache.ExpiryHours == nil {
 		hrs := DEF_CACHE_EXPIRY_HOURS
-		config.CacheExpiryHours = &hrs
+		config.Cache.ExpiryHours = &hrs
+	}
+
+	if config.Cache.MaxSize == nil {
+		size := DEF_CACHE_SIZE
+		config.Cache.MaxSize = &size
 	}
 
 	if config.LogLevel == nil {
