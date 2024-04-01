@@ -16,12 +16,11 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-const prefix = "!"
-
 func New(
 	session *discordgo.Session,
 	logger *logger.Logger,
 	playerCache *cache.Cache[uint, *domain.Player],
+	prefix string,
 ) map[*regexp.Regexp]bot.Command {
 	return map[*regexp.Regexp]bot.Command{
 		regexp.MustCompile(`aoe2de:\/\/0/\d*`): {
@@ -42,7 +41,7 @@ func New(
 			Hidden: true,
 		},
 
-		withPrefix("balance"): {
+		withPrefix(prefix, "balance"): {
 			Handle: func(context *bot.Context, args []string) {
 				// discard command
 				args = args[1:]
@@ -77,7 +76,7 @@ func parseAoeLobbyId(args []string) string {
 	return lobbyId
 }
 
-func withPrefix(cmd string) *regexp.Regexp {
+func withPrefix(prefix, cmd string) *regexp.Regexp {
 	s := fmt.Sprintf("%s%s", prefix, cmd)
 	return regexp.MustCompile(s)
 }

@@ -16,9 +16,10 @@ type bot struct {
 	logger   *logger.Logger
 	commands map[*regexp.Regexp]Command
 	Session  *discordgo.Session
+	prefix   string
 }
 
-func New(logger *logger.Logger, token string) (*bot, error) {
+func New(logger *logger.Logger, prefix, token string) (*bot, error) {
 	discord, err := discordgo.New("Bot " + token)
 
 	if err != nil {
@@ -28,13 +29,14 @@ func New(logger *logger.Logger, token string) (*bot, error) {
 	return &bot{
 		logger:  logger,
 		Session: discord,
+		prefix:  prefix,
 	}, nil
 }
 
 func (b *bot) Run(commands map[*regexp.Regexp]Command, port *uint) {
 	b.commands = commands
 
-	b.Session.Identify.Presence.Game.Name = "!help"
+	b.Session.Identify.Presence.Game.Name = fmt.Sprintf("%shelp", b.prefix)
 
 	b.Session.AddHandler(b.onMessage)
 
@@ -83,7 +85,7 @@ func (b *bot) onMessage(session *discordgo.Session, message *discordgo.MessageCr
 
 	action := args[0]
 
-	if action == "!help" {
+	if action == fmt.Sprintf("%shelp", b.prefix) {
 		builder := strings.Builder{}
 
 		for k, c := range b.commands {

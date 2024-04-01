@@ -102,11 +102,10 @@ func (h *handler) printLobbyNotFound(context *bot.Context, lobbyId string) {
 	sb.WriteString(gameIdStr)
 
 	sb.WriteString("\n\nPossible reasons:\n")
-	sb.WriteString("* The lobby is private\n")
-	sb.WriteString("* The ID is invalid\n")
+	sb.WriteString("* The lobby is private or does not exist\n")
 	sb.WriteString("* The external lobby provider is not up to date\n\n")
 
-	joinStr := fmt.Sprintf(`[Click here to join](https://aoe2lobby.com/j/%s)`, lobbyId)
+	joinStr := fmt.Sprintf(`If this is an error, you can [click here to join](https://aoe2lobby.com/j/%s)`, lobbyId)
 	sb.WriteString(joinStr)
 
 	h.messageProvider.ChannelMessageSendReply(context.ChannelId, sb.String(), context.MessageId, context.GuildId)
