@@ -51,7 +51,7 @@ func (b *bot) Run(commands map[*regexp.Regexp]Command, port *uint) {
 	if port != nil {
 		m := http.NewServeMux()
 
-		b.logger.Infof("Starting server on port %d", *port)
+		b.logger.Infof("Starting web server on port %d", *port)
 
 		server := http.Server{
 			Addr:    fmt.Sprintf(":%d", *port),
@@ -64,6 +64,8 @@ func (b *bot) Run(commands map[*regexp.Regexp]Command, port *uint) {
 		if err := server.ListenAndServe(); err != nil {
 			panic(err)
 		}
+	} else {
+		b.logger.Info("No port provided. Web server not starting")
 	}
 
 	c := make(chan os.Signal, 1)
