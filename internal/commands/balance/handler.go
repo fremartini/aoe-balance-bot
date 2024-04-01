@@ -2,12 +2,10 @@ package balance
 
 import (
 	"aoe-bot/internal/bot"
-	"aoe-bot/internal/discord"
 	"aoe-bot/internal/domain"
 	internalErrors "aoe-bot/internal/errors"
 	"aoe-bot/internal/list"
 	"aoe-bot/internal/logger"
-	"errors"
 	"fmt"
 	"strings"
 )
@@ -17,32 +15,31 @@ type gameDataProvider interface {
 	GetPlayers(playerIds []uint) ([]*domain.Player, error)
 }
 
-type userDataProvider interface {
-	FindUserVoiceChannel(guildId, userid string) (string, error)
-	FindUsersInVoiceChannel(serverId, channelId string) ([]*discord.User, error)
-}
-
 type messageProvider interface {
 	ChannelMessageSendReply(channelID, content, messageId, guildId string)
 }
 
+type teamProvider interface {
+	CreateTeams(players []*Player) (*Team, *Team)
+}
+
 type handler struct {
-	dataProvider        gameDataProvider
-	discordInfoProvider userDataProvider
-	messageProvider     messageProvider
-	logger              *logger.Logger
+	dataProvider    gameDataProvider
+	messageProvider messageProvider
+	teamProvider    teamProvider
+	logger          *logger.Logger
 }
 
 func New(
 	gameDataProvider gameDataProvider,
-	userDataProvider userDataProvider,
 	messageProvider messageProvider,
+	teamProvider teamProvider,
 	logger *logger.Logger) *handler {
 	return &handler{
-		dataProvider:        gameDataProvider,
-		discordInfoProvider: userDataProvider,
-		messageProvider:     messageProvider,
-		logger:              logger,
+		dataProvider:    gameDataProvider,
+		messageProvider: messageProvider,
+		teamProvider:    teamProvider,
+		logger:          logger,
 	}
 }
 
@@ -93,7 +90,7 @@ func (h *handler) Handle(context *bot.Context, lobbyId string) {
 		}
 	})
 
-	t1, t2 := CreateTeamsBruteForce(playersWithELO)
+	t1, t2 := h.teamProvider.CreateTeams(playersWithELO)
 
 	h.printOutput(*context, []*Team{t1, t2}, *lobby)
 }
@@ -101,7 +98,7 @@ func (h *handler) Handle(context *bot.Context, lobbyId string) {
 func (h *handler) printOutput(context bot.Context, teams []*Team, lobby *domain.Lobby) {
 	var sb strings.Builder
 
-	gameIdStr := fmt.Sprintf(`Game **%s** (%d)`, lobby.Title, lobby.Id)
+	gameIdStr := fmt.Sprintf(`Lobby **%s** (%d)`, lobby.Title, lobby.Id)
 	sb.WriteString(gameIdStr)
 	sb.WriteString("\n\n")
 
@@ -140,25 +137,16 @@ func (h *handler) printOutput(context bot.Context, teams []*Team, lobby *domain.
 }
 
 func (h *handler) handleError(err error, context *bot.Context) {
-	var serverErr *internalErrors.ServerError
-	if errors.As(err, &serverErr) {
+	switch e := err.(type) {
+	default:
+		h.logger.Warnf("Unhandlded error %v", err)
+	case *internalErrors.ServerError:
 		h.messageProvider.ChannelMessageSendReply(context.ChannelId, "Server error", context.MessageId, context.GuildId)
-		return
-	}
-
-	var notFoundErr *internalErrors.NotFoundError
-	if errors.As(err, &notFoundErr) {
+	case *internalErrors.NotFoundError:
 		h.messageProvider.ChannelMessageSendReply(context.ChannelId, "Unknown player", context.MessageId, context.GuildId)
-		return
+	case *internalErrors.ApplicationError:
+		h.messageProvider.ChannelMessageSendReply(context.ChannelId, e.Message, context.MessageId, context.GuildId)
 	}
-
-	var applicationErr *internalErrors.ApplicationError
-	if errors.As(err, &applicationErr) {
-		h.messageProvider.ChannelMessageSendReply(context.ChannelId, applicationErr.Message, context.MessageId, context.GuildId)
-		return
-	}
-
-	h.logger.Warnf("Unhandlded error %v", err)
 }
 
 func abs(x int) int {

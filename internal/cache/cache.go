@@ -10,7 +10,7 @@ type Cache[T, K comparable] struct {
 	entries map[T]entry[K]
 	expiry  float64
 	logger  *logger.Logger
-	maxSize uint
+	maxSize int
 }
 
 type entry[T any] struct {
@@ -23,12 +23,12 @@ func New[T, K comparable](expiry uint, maxSize uint, logger *logger.Logger) *Cac
 		entries: map[T]entry[K]{},
 		expiry:  float64(expiry),
 		logger:  logger,
-		maxSize: maxSize,
+		maxSize: int(maxSize),
 	}
 }
 
 func (c *Cache[T, K]) Insert(key T, value K) {
-	if len(c.entries) >= int(c.maxSize) {
+	if len(c.entries) >= c.maxSize {
 		c.logger.Info("Cache is full. Removing expired entries ...")
 
 		c.removeOldEntries()
@@ -68,8 +68,10 @@ func (c *Cache[T, K]) Contains(key T) (*K, bool) {
 }
 
 func (c *Cache[T, K]) removeOldEntries() {
+	now := time.Now()
+
 	for key, value := range c.entries {
-		if !c.isStale(time.Now(), value.lastAccessed) {
+		if !c.isStale(now, value.lastAccessed) {
 			continue
 		}
 
