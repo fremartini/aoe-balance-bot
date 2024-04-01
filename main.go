@@ -17,9 +17,7 @@ func main() {
 
 	logger := logger.New(config.LogLevel)
 
-	logger.Infof("Log level %d", config.LogLevel)
-	logger.Infof("Cache expiry %d", config.Cache.ExpiryHours)
-	logger.Infof("Cache size %d", config.Cache.MaxSize)
+	logger.Infof("Log level %d, Cache expiry %d, Cache size %d", config.LogLevel, config.Cache.ExpiryHours, config.Cache.MaxSize)
 
 	b, err := bot.New(logger, config.Token)
 
@@ -31,5 +29,5 @@ func main() {
 
 	commands := New(b.Session, logger, playerCache)
 
-	b.Run(commands, config.Port)
+	b.Run(commands, 8080)
 }

@@ -26,7 +26,6 @@ type config struct {
 		ExpiryHours uint
 		MaxSize     uint
 	}
-	Port *uint
 }
 
 func Read() (*config, error) {
@@ -42,10 +41,6 @@ func readFromEnv() (*config, error) {
 	logLevel := envValueOrDefault("logLevel", DefLogLevel, parseUint)
 	cacheExpiryHours := envValueOrDefault("cacheExpiryHours", DefCacheExpiryHours, parseUint)
 	cacheMaxSize := envValueOrDefault("cacheMaxSize", DefCacheSize, parseUint)
-	port := envValueOrDefault("port", nil, func(s string) *uint {
-		r := parseUint(s)
-		return &r
-	})
 
 	if token == nil {
 		return nil, ErrTokenNotSupplied
@@ -61,7 +56,6 @@ func readFromEnv() (*config, error) {
 			ExpiryHours: cacheExpiryHours,
 			MaxSize:     cacheMaxSize,
 		},
-		Port: port,
 	}, nil
 }
 
@@ -72,7 +66,6 @@ type fileConfig struct {
 		ExpiryHours *uint
 		MaxSize     *uint
 	}
-	Port *uint
 }
 
 func readFromFile() (*config, error) {
@@ -104,7 +97,6 @@ func readFromFile() (*config, error) {
 			ExpiryHours: valueOrDefault(fileConfig.Cache.ExpiryHours, DefCacheExpiryHours),
 			MaxSize:     valueOrDefault(fileConfig.Cache.MaxSize, DefCacheSize),
 		},
-		Port: fileConfig.Port,
 	}, nil
 }
 
