@@ -114,5 +114,7 @@ func (b *bot) onMessage(session *discordgo.Session, message *discordgo.MessageCr
 		b.logger.Infof("Handling action: %s %s", action, args)
 
 		v.Handle(context, args)
+
+		break
 	}
 }
