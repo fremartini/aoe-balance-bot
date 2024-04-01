@@ -8,125 +8,130 @@ import (
 	"strconv"
 )
 
-type config struct {
-	Token    *string
-	LogLevel *uint
-	Cache    *cache
-}
-
-type cache struct {
-	ExpiryHours *uint
-	MaxSize     *uint
-}
-
 const (
-	CONFIG_FILE                 = ".config"
-	DEF_LOG_LEVEL          uint = logger.INFO
-	DEF_CACHE_EXPIRY_HOURS uint = 24
-	DEF_CACHE_SIZE         uint = 20
+	ConfigFile               = ".config"
+	DefLogLevel         uint = logger.INFO
+	DefCacheExpiryHours uint = 24
+	DefCacheSize        uint = 20
 )
 
-func Read() (*config, error) {
-	if _, err := os.Stat(CONFIG_FILE); errors.Is(err, os.ErrNotExist) {
-		return readConfigFromEnv()
-	}
+var (
+	ErrTokenNotSupplied = errors.New("token not supplied")
+)
 
-	return readConfigFromFile()
+type config struct {
+	Token    string
+	LogLevel uint
+	Cache    *struct {
+		ExpiryHours uint
+		MaxSize     uint
+	}
+	Port *uint
 }
 
-func readConfigFromEnv() (*config, error) {
-	tokenEnv := os.Getenv("token")
-	logLevelEnv := os.Getenv("logLevel")
-	cacheExpiryHoursEnv := os.Getenv("cacheExpiryHours")
-	cacheMaxSizeEnv := os.Getenv("cacheMaxSize")
-
-	if tokenEnv == "" {
-		return nil, errors.New("token not supplied")
+func Read() (*config, error) {
+	if _, err := os.Stat(ConfigFile); errors.Is(err, os.ErrNotExist) {
+		return readFromEnv()
 	}
 
-	logLevel, err := uintOrDefault(logLevelEnv, DEF_LOG_LEVEL)
+	return readFromFile()
+}
 
-	if err != nil {
-		return nil, err
-	}
+func readFromEnv() (*config, error) {
+	token := envValueOrDefault("token", nil, func(s string) *string { return &s })
+	logLevel := envValueOrDefault("logLevel", DefLogLevel, parseUint)
+	cacheExpiryHours := envValueOrDefault("cacheExpiryHours", DefCacheExpiryHours, parseUint)
+	cacheMaxSize := envValueOrDefault("cacheMaxSize", DefCacheSize, parseUint)
+	port := envValueOrDefault("port", nil, func(s string) *uint {
+		r := parseUint(s)
+		return &r
+	})
 
-	cacheExpiryHours, err := uintOrDefault(cacheExpiryHoursEnv, DEF_CACHE_EXPIRY_HOURS)
-
-	if err != nil {
-		return nil, err
-	}
-
-	cacheMaxSize, err := uintOrDefault(cacheMaxSizeEnv, DEF_CACHE_SIZE)
-
-	if err != nil {
-		return nil, err
+	if token == nil {
+		return nil, ErrTokenNotSupplied
 	}
 
 	return &config{
-		Token:    &tokenEnv,
-		LogLevel: &logLevel,
-		Cache: &cache{
-			ExpiryHours: &cacheExpiryHours,
-			MaxSize:     &cacheMaxSize,
+		Token:    *token,
+		LogLevel: logLevel,
+		Cache: &struct {
+			ExpiryHours uint
+			MaxSize     uint
+		}{
+			ExpiryHours: cacheExpiryHours,
+			MaxSize:     cacheMaxSize,
 		},
+		Port: port,
 	}, nil
 }
 
-func readConfigFromFile() (*config, error) {
-	content, err := os.ReadFile(CONFIG_FILE)
+type fileConfig struct {
+	Token    *string
+	LogLevel *uint
+	Cache    *struct {
+		ExpiryHours *uint
+		MaxSize     *uint
+	}
+	Port *uint
+}
+
+func readFromFile() (*config, error) {
+	content, err := os.ReadFile(ConfigFile)
 
 	if err != nil {
 		return nil, err
 	}
 
-	config := &config{}
+	fileConfig := &fileConfig{}
 
-	err = json.Unmarshal(content, config)
-
-	if config.Token == nil {
-		return nil, errors.New("token not supplied")
-	}
-
-	if config.Cache.ExpiryHours == nil {
-		hrs := DEF_CACHE_EXPIRY_HOURS
-		config.Cache.ExpiryHours = &hrs
-	}
-
-	if config.Cache.MaxSize == nil {
-		size := DEF_CACHE_SIZE
-		config.Cache.MaxSize = &size
-	}
-
-	if config.LogLevel == nil {
-		lvl := DEF_LOG_LEVEL
-		config.LogLevel = &lvl
-	}
-
-	return config, err
-}
-
-func uintOrDefault(v string, def uint) (uint, error) {
-	if v == "" {
-		// no env value provided
-		return def, nil
-	}
-
-	// env value is provided
-	l, err := parseUint(v)
+	err = json.Unmarshal(content, fileConfig)
 
 	if err != nil {
-		return def, err
+		return nil, err
 	}
 
-	return l, err
+	if fileConfig.Token == nil {
+		return nil, ErrTokenNotSupplied
+	}
+
+	return &config{
+		Token:    *fileConfig.Token,
+		LogLevel: valueOrDefault(fileConfig.LogLevel, DefLogLevel),
+		Cache: &struct {
+			ExpiryHours uint
+			MaxSize     uint
+		}{
+			ExpiryHours: valueOrDefault(fileConfig.Cache.ExpiryHours, DefCacheExpiryHours),
+			MaxSize:     valueOrDefault(fileConfig.Cache.MaxSize, DefCacheSize),
+		},
+		Port: fileConfig.Port,
+	}, nil
 }
 
-func parseUint(s string) (uint, error) {
+func envValueOrDefault[K any](env string, def K, f func(string) K) K {
+	v := os.Getenv(env)
+
+	if v == "" {
+		return def
+	}
+
+	return f(v)
+}
+
+func valueOrDefault[K any](a *K, def K) K {
+	if a == nil {
+		return def
+	}
+
+	return *a
+}
+
+func parseUint(s string) uint {
 	v, err := strconv.ParseUint(s, 10, 64)
 
 	if err != nil {
-		return 0, err
+		panic(err)
 	}
 
-	return uint(v), err
+	return uint(v)
 }
