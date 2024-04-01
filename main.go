@@ -6,6 +6,8 @@ import (
 	"aoe-bot/internal/config"
 	"aoe-bot/internal/domain"
 	"aoe-bot/internal/logger"
+	"encoding/json"
+	"fmt"
 )
 
 func main() {
@@ -29,5 +31,13 @@ func main() {
 
 	commands := New(b.Session, logger, playerCache)
 
+	fmt.Println(prettyPrint(config))
+
 	b.Run(commands)
+}
+
+func prettyPrint(a any) string {
+	b, _ := json.Marshal(a)
+
+	return string(b)
 }

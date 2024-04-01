@@ -50,7 +50,10 @@ func (b *bot) Run(commands map[*regexp.Regexp]Command) {
 
 	m := http.NewServeMux()
 
-	server := http.Server{Addr: ":8080", Handler: m}
+	server := http.Server{
+		Addr:    ":8080",
+		Handler: m,
+	}
 	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("I'm alive"))
 	})
