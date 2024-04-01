@@ -42,7 +42,7 @@ func readFromEnv() (*config, error) {
 	logLevel := envValueOrDefault("logLevel", DefLogLevel, parseUint)
 	cacheExpiryHours := envValueOrDefault("cacheExpiryHours", DefCacheExpiryHours, parseUint)
 	cacheMaxSize := envValueOrDefault("cacheMaxSize", DefCacheSize, parseUint)
-	port := envValueOrDefault("PORT", nil, func(s string) *uint {
+	port := envValueOrDefault("port", nil, func(s string) *uint {
 		r := parseUint(s)
 		return &r
 	})

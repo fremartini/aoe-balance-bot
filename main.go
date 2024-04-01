@@ -33,7 +33,7 @@ func main() {
 
 	fmt.Println(prettyPrint(config))
 
-	b.Run(commands)
+	b.Run(commands, config.Port)
 }
 
 func prettyPrint(a any) string {
