@@ -24,10 +24,10 @@ type teamProvider interface {
 }
 
 type handler struct {
-	dataProvider    gameDataProvider
-	messageProvider messageProvider
-	teamProvider    teamProvider
-	logger          *logger.Logger
+	gameDataProvider gameDataProvider
+	messageProvider  messageProvider
+	teamProvider     teamProvider
+	logger           *logger.Logger
 }
 
 func New(
@@ -36,17 +36,17 @@ func New(
 	teamProvider teamProvider,
 	logger *logger.Logger) *handler {
 	return &handler{
-		dataProvider:    gameDataProvider,
-		messageProvider: messageProvider,
-		teamProvider:    teamProvider,
-		logger:          logger,
+		gameDataProvider: gameDataProvider,
+		messageProvider:  messageProvider,
+		teamProvider:     teamProvider,
+		logger:           logger,
 	}
 }
 
 func (h *handler) Handle(context *bot.Context, lobbyId string) {
 	h.logger.Infof("Trying to find lobby with id %s", lobbyId)
 
-	lobbies, err := h.dataProvider.GetLobbies()
+	lobbies, err := h.gameDataProvider.GetLobbies()
 
 	if err != nil {
 		h.handleError(err, context)
@@ -61,9 +61,9 @@ func (h *handler) Handle(context *bot.Context, lobbyId string) {
 	if !found {
 		e := fmt.Sprintf("Public lobby %s not found", lobbyId)
 		h.logger.Info(e)
-		internalError := internalErrors.NewApplicationError(e)
 
-		h.handleError(internalError, context)
+		h.printLobbyNotFound(context, lobbyId)
+
 		return
 	}
 
@@ -71,7 +71,7 @@ func (h *handler) Handle(context *bot.Context, lobbyId string) {
 
 	h.logger.Infof("Found lobby %s (%s). It has %d players", (*lobby).Title, lobbyId, len(memberIds))
 
-	players, err := h.dataProvider.GetPlayers(memberIds)
+	players, err := h.gameDataProvider.GetPlayers(memberIds)
 
 	if err != nil {
 		h.handleError(err, context)
@@ -92,10 +92,27 @@ func (h *handler) Handle(context *bot.Context, lobbyId string) {
 
 	t1, t2 := h.teamProvider.CreateTeams(playersWithELO)
 
-	h.printOutput(*context, []*Team{t1, t2}, *lobby)
+	h.printLobbyOutput(context, []*Team{t1, t2}, *lobby)
 }
 
-func (h *handler) printOutput(context bot.Context, teams []*Team, lobby *domain.Lobby) {
+func (h *handler) printLobbyNotFound(context *bot.Context, lobbyId string) {
+	var sb strings.Builder
+
+	gameIdStr := fmt.Sprintf(`Lobby **%s** could not be found`, lobbyId)
+	sb.WriteString(gameIdStr)
+
+	sb.WriteString("\n\nPossible reasons:\n")
+	sb.WriteString("* The lobby is private\n")
+	sb.WriteString("* The ID is invalid\n")
+	sb.WriteString("* The external lobby provider is not up to date\n\n")
+
+	joinStr := fmt.Sprintf(`[Click here to join](https://aoe2lobby.com/j/%s)`, lobbyId)
+	sb.WriteString(joinStr)
+
+	h.messageProvider.ChannelMessageSendReply(context.ChannelId, sb.String(), context.MessageId, context.GuildId)
+}
+
+func (h *handler) printLobbyOutput(context *bot.Context, teams []*Team, lobby *domain.Lobby) {
 	var sb strings.Builder
 
 	gameIdStr := fmt.Sprintf(`Lobby **%s** (%d)`, lobby.Title, lobby.Id)
