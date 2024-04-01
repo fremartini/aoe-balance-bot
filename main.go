@@ -29,5 +29,5 @@ func main() {
 
 	commands := New(b.Session, logger, playerCache)
 
-	b.Run(commands, 8080)
+	b.Run(commands)
 }

@@ -31,7 +31,7 @@ func New(logger *logger.Logger, token string) (*bot, error) {
 	}, nil
 }
 
-func (b *bot) Run(commands map[*regexp.Regexp]Command, port uint) {
+func (b *bot) Run(commands map[*regexp.Regexp]Command) {
 	b.commands = commands
 
 	b.Session.Identify.Presence.Game.Name = "!help"
@@ -48,12 +48,9 @@ func (b *bot) Run(commands map[*regexp.Regexp]Command, port uint) {
 
 	defer b.Session.Close()
 
-	b.logger.Infof("Starting server on port %d", port)
-
 	m := http.NewServeMux()
 
-	addr := fmt.Sprintf(":%d", port)
-	server := http.Server{Addr: addr, Handler: m}
+	server := http.Server{Addr: ":8080", Handler: m}
 	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("I'm alive"))
 	})
