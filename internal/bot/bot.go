@@ -69,17 +69,17 @@ func (b *bot) onMessage(session *discordgo.Session, message *discordgo.MessageCr
 	action := args[0]
 
 	if action == "!help" {
-		s := strings.Builder{}
+		builder := strings.Builder{}
 
 		for k, c := range b.commands {
 			if c.Hidden {
 				continue
 			}
 
-			s.WriteString(fmt.Sprintf("%s\t\t\t\t%s\n", k, c.Hint))
+			builder.WriteString(fmt.Sprintf("%s\t\t\t\t%s\n", k, c.Hint))
 		}
 
-		session.ChannelMessageSend(message.ChannelID, s.String())
+		session.ChannelMessageSend(message.ChannelID, builder.String())
 
 		return
 	}
@@ -92,10 +92,12 @@ func (b *bot) onMessage(session *discordgo.Session, message *discordgo.MessageCr
 	}
 
 	for k, v := range b.commands {
-		if k.MatchString(action) {
-			b.logger.Infof("Handling action: %s %s", action, args)
-
-			v.Handle(context, args)
+		if !k.MatchString(action) {
+			continue
 		}
+
+		b.logger.Infof("Handling action: %s %s", action, args)
+
+		v.Handle(context, args)
 	}
 }

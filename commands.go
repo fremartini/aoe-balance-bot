@@ -4,6 +4,7 @@ import (
 	"aoe-bot/internal/bot"
 	"aoe-bot/internal/cache"
 	"aoe-bot/internal/commands/balance"
+	"aoe-bot/internal/commands/balance/strategies"
 	"aoe-bot/internal/discord"
 	"aoe-bot/internal/domain"
 	"aoe-bot/internal/librematch"
@@ -20,7 +21,8 @@ const prefix = "!"
 func New(
 	session *discordgo.Session,
 	logger *logger.Logger,
-	playerCache *cache.Cache[uint, *domain.Player]) map[*regexp.Regexp]bot.Command {
+	playerCache *cache.Cache[uint, *domain.Player],
+) map[*regexp.Regexp]bot.Command {
 	return map[*regexp.Regexp]bot.Command{
 		regexp.MustCompile(`aoe2de:\/\/0/\d*`): {
 			Handle: func(context *bot.Context, args []string) {
@@ -30,7 +32,9 @@ func New(
 
 				librematchApi := librematch.New(logger, playerCache)
 
-				handler := balance.New(librematchApi, discordAPI, discordAPI, logger)
+				teamStrategy := strategies.NewBruteForce()
+
+				handler := balance.New(librematchApi, discordAPI, teamStrategy, logger)
 
 				handler.Handle(context, lobbyId)
 			},
@@ -54,7 +58,9 @@ func New(
 
 				librematchApi := librematch.New(logger, playerCache)
 
-				handler := balance.New(librematchApi, discordAPI, discordAPI, logger)
+				teamStrategy := strategies.NewBruteForce()
+
+				handler := balance.New(librematchApi, discordAPI, teamStrategy, logger)
 
 				handler.Handle(context, lobbyId)
 			},
