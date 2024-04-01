@@ -34,7 +34,8 @@ func New(
 	gameDataProvider gameDataProvider,
 	messageProvider messageProvider,
 	teamProvider teamProvider,
-	logger *logger.Logger) *handler {
+	logger *logger.Logger,
+) *handler {
 	return &handler{
 		gameDataProvider: gameDataProvider,
 		messageProvider:  messageProvider,
@@ -53,12 +54,12 @@ func (h *handler) Handle(context *bot.Context, lobbyId string) {
 		return
 	}
 
-	lobby, found := list.FirstWhere(lobbies, func(lobby *domain.Lobby) bool {
-		s := fmt.Sprintf("%d", lobby.Id)
-		return s == lobbyId
+	lobby, ok := list.FirstWhere(lobbies, func(lobby *domain.Lobby) bool {
+		lobbyIdStr := fmt.Sprintf("%d", lobby.Id)
+		return lobbyIdStr == lobbyId
 	})
 
-	if !found {
+	if !ok {
 		e := fmt.Sprintf("Public lobby %s not found", lobbyId)
 		h.logger.Info(e)
 
@@ -90,9 +91,9 @@ func (h *handler) Handle(context *bot.Context, lobbyId string) {
 		}
 	})
 
-	t1, t2 := h.teamProvider.CreateTeams(playersWithELO)
+	team1, team2 := h.teamProvider.CreateTeams(playersWithELO)
 
-	h.printLobbyOutput(context, []*Team{t1, t2}, *lobby)
+	h.printLobbyOutput(context, []*Team{team1, team2}, *lobby)
 }
 
 func (h *handler) printLobbyNotFound(context *bot.Context, lobbyId string) {
@@ -157,6 +158,7 @@ func (h *handler) handleError(err error, context *bot.Context) {
 	default:
 		h.logger.Warnf("Unhandlded error %v", err)
 	case *internalErrors.ServerError:
+		h.logger.Warn(e.Message)
 		h.messageProvider.ChannelMessageSendReply(context.ChannelId, "Server error", context.MessageId, context.GuildId)
 	case *internalErrors.NotFoundError:
 		h.messageProvider.ChannelMessageSendReply(context.ChannelId, "Unknown player", context.MessageId, context.GuildId)
