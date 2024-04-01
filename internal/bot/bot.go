@@ -40,7 +40,12 @@ func (b *bot) Run(commands map[*regexp.Regexp]Command, port uint) {
 
 	b.logger.Info("Starting bot")
 
-	b.Session.Open()
+	err := b.Session.Open()
+
+	if err != nil {
+		panic(err)
+	}
+
 	defer b.Session.Close()
 
 	b.logger.Infof("Starting server on port %d", port)
@@ -49,7 +54,7 @@ func (b *bot) Run(commands map[*regexp.Regexp]Command, port uint) {
 
 	addr := fmt.Sprintf(":%d", port)
 	server := http.Server{Addr: addr, Handler: m}
-	m.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
+	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("I'm alive"))
 	})
 
