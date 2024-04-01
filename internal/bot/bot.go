@@ -51,8 +51,10 @@ func (b *bot) Run(commands map[*regexp.Regexp]Command, port *uint) {
 	if port != nil {
 		m := http.NewServeMux()
 
+		b.logger.Infof("Starting server on port %d", *port)
+
 		server := http.Server{
-			Addr:    ":8080",
+			Addr:    fmt.Sprintf(":%d", *port),
 			Handler: m,
 		}
 		m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
