@@ -11,9 +11,12 @@ import (
 	"aoe-bot/internal/logger"
 	"fmt"
 	"regexp"
-	"strings"
 
 	"github.com/bwmarrin/discordgo"
+)
+
+const (
+	aoe2LobbyRegex = `aoe2de:\/\/0/\d*`
 )
 
 func New(
@@ -23,11 +26,9 @@ func New(
 	prefix string,
 ) map[*regexp.Regexp]bot.Command {
 	return map[*regexp.Regexp]bot.Command{
-		regexp.MustCompile(`aoe2de:\/\/0/\d*`): {
+		regexp.MustCompile(aoe2LobbyRegex): {
 			Handle: func(context *bot.Context, args []string) {
 				discordAPI := discord.New(session)
-
-				lobbyId := parseAoeLobbyId(args)
 
 				librematchApi := librematch.New(logger, playerCache)
 
@@ -35,15 +36,14 @@ func New(
 
 				handler := balance.New(librematchApi, discordAPI, teamStrategy, logger)
 
-				handler.Handle(context, lobbyId)
+				handler.Handle(context, args)
 			},
 			Hint:   "Create two teams of players in a lobby",
 			Hidden: true,
 		},
-
 		withPrefix(prefix, "balance"): {
 			Handle: func(context *bot.Context, args []string) {
-				// discard command
+				// discard command name
 				args = args[1:]
 
 				discordAPI := discord.New(session)
@@ -53,27 +53,18 @@ func New(
 					return
 				}
 
-				lobbyId := parseAoeLobbyId(args)
-
 				librematchApi := librematch.New(logger, playerCache)
 
 				teamStrategy := strategies.NewBruteForce()
 
 				handler := balance.New(librematchApi, discordAPI, teamStrategy, logger)
 
-				handler.Handle(context, lobbyId)
+				handler.Handle(context, args)
 			},
 			Hint:   "Create two teams of players in a lobby",
 			Hidden: false,
 		},
 	}
-}
-
-func parseAoeLobbyId(args []string) string {
-	fullLobbyId := strings.Split(args[0], "/")
-	lobbyId := fullLobbyId[len(fullLobbyId)-1]
-
-	return lobbyId
 }
 
 func withPrefix(prefix, cmd string) *regexp.Regexp {

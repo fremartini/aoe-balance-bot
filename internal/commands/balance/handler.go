@@ -44,7 +44,9 @@ func New(
 	}
 }
 
-func (h *handler) Handle(context *bot.Context, lobbyId string) {
+func (h *handler) Handle(context *bot.Context, args []string) {
+	lobbyId := parseAoeLobbyId(args)
+
 	h.logger.Infof("Trying to find lobby with id %s", lobbyId)
 
 	lobbies, err := h.gameDataProvider.GetLobbies()
@@ -165,6 +167,13 @@ func (h *handler) handleError(err error, context *bot.Context) {
 	case *internalErrors.ApplicationError:
 		h.messageProvider.ChannelMessageSendReply(context.ChannelId, e.Message, context.MessageId, context.GuildId)
 	}
+}
+
+func parseAoeLobbyId(args []string) string {
+	fullLobbyId := strings.Split(args[0], "/")
+	lobbyId := fullLobbyId[len(fullLobbyId)-1]
+
+	return lobbyId
 }
 
 func abs(x int) int {
