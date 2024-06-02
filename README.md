@@ -2,7 +2,7 @@
 A Discord bot written in Go to balance AoE2 DE lobbies using in-game id's. 
 
 # Commands
-- `!balance`: Create two teams of players with minimal ELO difference in an AoE2DE lobby using its provided game id (`!balance aoe2de://0/xxxxxxxxx`).
+- `!balance`: Create two teams of players with minimal ELO difference in an AoE2DE lobby using its provided game id (`!balance aoe2de://0/xxxxxxxxx`). This command will also run if a lobby id is pasted into a channel without the command prefix
 - `!help`: Display all available commands
 
 # Setup

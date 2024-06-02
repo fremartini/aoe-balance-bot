@@ -86,17 +86,7 @@ func (b *bot) onMessage(session *discordgo.Session, message *discordgo.MessageCr
 	action := args[0]
 
 	if action == fmt.Sprintf("%shelp", b.prefix) {
-		builder := strings.Builder{}
-
-		for k, c := range b.commands {
-			if c.Hidden {
-				continue
-			}
-
-			builder.WriteString(fmt.Sprintf("%s\t\t\t\t%s\n", k, c.Hint))
-		}
-
-		session.ChannelMessageSend(message.ChannelID, builder.String())
+		b.printHelp(session, message)
 
 		return
 	}
@@ -119,4 +109,18 @@ func (b *bot) onMessage(session *discordgo.Session, message *discordgo.MessageCr
 
 		break
 	}
+}
+
+func (b *bot) printHelp(session *discordgo.Session, message *discordgo.MessageCreate) {
+	builder := strings.Builder{}
+
+	for k, c := range b.commands {
+		if c.Hidden {
+			continue
+		}
+
+		builder.WriteString(fmt.Sprintf("%s\t\t\t\t%s\n", k, c.Hint))
+	}
+
+	session.ChannelMessageSend(message.ChannelID, builder.String())
 }
