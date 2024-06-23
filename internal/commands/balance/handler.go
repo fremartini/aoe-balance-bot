@@ -161,7 +161,9 @@ func (h *handler) handleError(err error, context *bot.Context) {
 		h.logger.Warnf("Unhandlded error %v", err)
 	case *internalErrors.ServerError:
 		h.logger.Warn(e.Message)
-		h.messageProvider.ChannelMessageSendReply(context.ChannelId, "Server error", context.MessageId, context.GuildId)
+		errText := fmt.Sprintf("Server error \n\n%s", e.Message)
+
+		h.messageProvider.ChannelMessageSendReply(context.ChannelId, errText, context.MessageId, context.GuildId)
 	case *internalErrors.NotFoundError:
 		h.messageProvider.ChannelMessageSendReply(context.ChannelId, "Unknown player", context.MessageId, context.GuildId)
 	case *internalErrors.ApplicationError:
