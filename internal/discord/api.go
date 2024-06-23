@@ -25,3 +25,7 @@ func (p *api) ChannelMessageSendReply(channelID, content, messageId, guildId str
 		GuildID:   guildId,
 	})
 }
+
+func (p *api) ChannelMessageEdit(channelID, content, messageId string) {
+	p.session.ChannelMessageEdit(channelID, messageId, content)
+}

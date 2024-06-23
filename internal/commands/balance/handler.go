@@ -17,6 +17,7 @@ type gameDataProvider interface {
 
 type messageProvider interface {
 	ChannelMessageSendReply(channelID, content, messageId, guildId string)
+	ChannelMessageEdit(channelID, content, messageId string)
 }
 
 type teamProvider interface {
@@ -152,7 +153,7 @@ func (h *handler) printLobbyOutput(context *bot.Context, teams []*Team, lobby *d
 	joinStr := fmt.Sprintf(`[Click here to join](https://aoe2lobby.com/j/%d)`, lobby.Id)
 	sb.WriteString(joinStr)
 
-	h.messageProvider.ChannelMessageSendReply(context.ChannelId, sb.String(), context.MessageId, context.GuildId)
+	h.messageProvider.ChannelMessageEdit(context.ChannelId, sb.String(), context.MessageId)
 }
 
 func (h *handler) handleError(err error, context *bot.Context) {
