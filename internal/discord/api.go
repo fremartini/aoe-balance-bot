@@ -14,18 +14,22 @@ func New(session *discordgo.Session) *api {
 	}
 }
 
-func (p *api) ChannelMessageSend(channelID, content string) {
-	p.session.ChannelMessageSend(channelID, content)
+func (p *api) ChannelMessageSend(channelID, content string) error {
+	_, err := p.session.ChannelMessageSend(channelID, content)
+
+	return err
 }
 
-func (p *api) ChannelMessageSendReply(channelID, content, messageId, guildId string) {
-	p.session.ChannelMessageSendReply(channelID, content, &discordgo.MessageReference{
+func (p *api) ChannelMessageSendReply(channelID, content, messageId, guildId string) error {
+	_, err := p.session.ChannelMessageSendReply(channelID, content, &discordgo.MessageReference{
 		MessageID: messageId,
 		ChannelID: channelID,
 		GuildID:   guildId,
 	})
+
+	return err
 }
 
-func (p *api) ChannelMessageEdit(channelID, content, messageId string) {
-	p.session.ChannelMessageEdit(channelID, messageId, content)
+func (p *api) ChannelMessageDelete(channelID string, messageID string) error {
+	return p.session.ChannelMessageDelete(channelID, messageID)
 }

@@ -29,6 +29,8 @@ func main() {
 		panic(err)
 	}
 
+	//http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+
 	playerCache := cache.New[uint, *domain.Player](config.Cache.ExpiryHours, config.Cache.MaxSize, logger)
 
 	commands := New(b.Session, logger, playerCache, Prefix)

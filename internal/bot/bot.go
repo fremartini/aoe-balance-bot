@@ -91,19 +91,20 @@ func (b *bot) onMessage(session *discordgo.Session, message *discordgo.MessageCr
 		return
 	}
 
-	context := &Context{
-		UserId:    message.Author.ID,
-		ChannelId: message.ChannelID,
-		GuildId:   message.GuildID,
-		MessageId: message.ID,
-	}
-
 	for k, v := range b.commands {
 		if !k.MatchString(action) {
 			continue
 		}
 
 		b.logger.Infof("Handling action: %s %s", action, args)
+
+		context := &Context{
+			UserId:    message.Author.ID,
+			ChannelId: message.ChannelID,
+			GuildId:   message.GuildID,
+			MessageId: message.ID,
+			Command:   action,
+		}
 
 		v.Handle(context, args)
 
