@@ -16,7 +16,8 @@ type gameDataProvider interface {
 }
 
 type messageProvider interface {
-	ChannelMessageSendReply(channelID, content, messageId, guildId string)
+	ChannelMessageSendReply(channelID, content, messageId, guildId string) error
+	ChannelMessageDelete(channelID string, messageID string) error
 }
 
 type teamProvider interface {
@@ -101,24 +102,27 @@ func (h *handler) Handle(context *bot.Context, args []string) {
 func (h *handler) printLobbyNotFound(context *bot.Context, lobbyId string) {
 	var sb strings.Builder
 
-	gameIdStr := fmt.Sprintf(`Lobby **%s** could not be found`, lobbyId)
-	sb.WriteString(gameIdStr)
+	sb.WriteString(fmt.Sprintf("<@%s> used %s", context.UserId, context.Command))
+	sb.WriteString("\n")
+	sb.WriteString(fmt.Sprintf(`Lobby **%s** could not be found`, lobbyId))
 
 	sb.WriteString("\n\nPossible reasons:\n")
 	sb.WriteString("* The lobby is private or does not exist\n")
 	sb.WriteString("* The external lobby provider is not up to date\n\n")
 
-	joinStr := fmt.Sprintf(`If this is an error, you can [click here to join](https://aoe2lobby.com/j/%s)`, lobbyId)
-	sb.WriteString(joinStr)
+	sb.WriteString(fmt.Sprintf(`If this is an error, you can [click here to join](https://aoe2lobby.com/j/%s)`, lobbyId))
 
 	h.messageProvider.ChannelMessageSendReply(context.ChannelId, sb.String(), context.MessageId, context.GuildId)
+
+	h.messageProvider.ChannelMessageDelete(context.ChannelId, context.MessageId)
 }
 
 func (h *handler) printLobbyOutput(context *bot.Context, teams []*Team, lobby *domain.Lobby) {
 	var sb strings.Builder
 
-	gameIdStr := fmt.Sprintf(`Lobby **%s** (%d)`, lobby.Title, lobby.Id)
-	sb.WriteString(gameIdStr)
+	sb.WriteString(fmt.Sprintf("<@%s> used %s", context.UserId, context.Command))
+	sb.WriteString("\n")
+	sb.WriteString(fmt.Sprintf(`Lobby **%s** (%d)`, lobby.Title, lobby.Id))
 	sb.WriteString("\n\n")
 
 	t1 := teams[0]
@@ -145,14 +149,14 @@ func (h *handler) printLobbyOutput(context *bot.Context, teams []*Team, lobby *d
 
 		diff := abs(int(t1.ELO) - int(t2.ELO))
 
-		diffStr := fmt.Sprintf("ELO difference: **%d** in favor of **Team %d**\n\n", diff, highestEloTeam)
-		sb.WriteString(diffStr)
+		sb.WriteString(fmt.Sprintf("ELO difference: **%d** in favor of **Team %d**\n\n", diff, highestEloTeam))
 	}
 
-	joinStr := fmt.Sprintf(`[Click here to join](https://aoe2lobby.com/j/%d)`, lobby.Id)
-	sb.WriteString(joinStr)
+	sb.WriteString(fmt.Sprintf(`[Click here to join](https://aoe2lobby.com/j/%d)`, lobby.Id))
 
 	h.messageProvider.ChannelMessageSendReply(context.ChannelId, sb.String(), context.MessageId, context.GuildId)
+
+	h.messageProvider.ChannelMessageDelete(context.ChannelId, context.MessageId)
 }
 
 func (h *handler) handleError(err error, context *bot.Context) {
@@ -161,9 +165,8 @@ func (h *handler) handleError(err error, context *bot.Context) {
 		h.logger.Warnf("Unhandlded error %v", err)
 	case *internalErrors.ServerError:
 		h.logger.Warn(e.Message)
-		errText := fmt.Sprintf("Server error \n\n%s", e.Message)
-
-		h.messageProvider.ChannelMessageSendReply(context.ChannelId, errText, context.MessageId, context.GuildId)
+		msg := fmt.Sprintf("**Server error** \n%s", e.Message)
+		h.messageProvider.ChannelMessageSendReply(context.ChannelId, msg, context.MessageId, context.GuildId)
 	case *internalErrors.NotFoundError:
 		h.messageProvider.ChannelMessageSendReply(context.ChannelId, "Unknown player", context.MessageId, context.GuildId)
 	case *internalErrors.ApplicationError:

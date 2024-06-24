@@ -5,4 +5,5 @@ type Context struct {
 	UserId    string
 	GuildId   string
 	MessageId string
+	Command   string
 }
