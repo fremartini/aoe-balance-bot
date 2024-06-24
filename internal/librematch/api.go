@@ -41,7 +41,7 @@ func (a *api) GetLobbies() ([]*domain.Lobby, error) {
 	resp, err := http.Get(url)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.NewServerError(err.Error())
 	}
 
 	defer resp.Body.Close()
@@ -96,7 +96,7 @@ func (a *api) GetPlayers(playerIds []uint) ([]*domain.Player, error) {
 	resp, err := http.Get(url)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.NewServerError(err.Error())
 	}
 
 	defer resp.Body.Close()
