@@ -6,8 +6,6 @@ import (
 	"aoe-bot/internal/config"
 	"aoe-bot/internal/domain"
 	"aoe-bot/internal/logger"
-	"crypto/tls"
-	"net/http"
 )
 
 const (
@@ -30,8 +28,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
-	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
 	playerCache := cache.New[uint, *domain.Player](config.Cache.ExpiryHours, config.Cache.MaxSize, logger)
 
