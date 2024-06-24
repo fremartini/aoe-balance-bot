@@ -18,7 +18,6 @@ type gameDataProvider interface {
 type messageProvider interface {
 	ChannelMessageSendReply(channelID, content, messageId, guildId string) error
 	ChannelMessageDelete(channelID string, messageID string) error
-	ChannelMessageSend(channelID, content string) error
 }
 
 type teamProvider interface {
@@ -113,7 +112,7 @@ func (h *handler) printLobbyNotFound(context *bot.Context, lobbyId string) {
 
 	sb.WriteString(fmt.Sprintf(`If this is an error, you can [click here to join](https://aoe2lobby.com/j/%s)`, lobbyId))
 
-	h.messageProvider.ChannelMessageSend(context.ChannelId, sb.String())
+	h.messageProvider.ChannelMessageSendReply(context.ChannelId, sb.String(), context.MessageId, context.GuildId)
 
 	h.messageProvider.ChannelMessageDelete(context.ChannelId, context.MessageId)
 }
@@ -155,7 +154,7 @@ func (h *handler) printLobbyOutput(context *bot.Context, teams []*Team, lobby *d
 
 	sb.WriteString(fmt.Sprintf(`[Click here to join](https://aoe2lobby.com/j/%d)`, lobby.Id))
 
-	h.messageProvider.ChannelMessageSend(context.ChannelId, sb.String())
+	h.messageProvider.ChannelMessageSendReply(context.ChannelId, sb.String(), context.MessageId, context.GuildId)
 
 	h.messageProvider.ChannelMessageDelete(context.ChannelId, context.MessageId)
 }
@@ -166,9 +165,8 @@ func (h *handler) handleError(err error, context *bot.Context) {
 		h.logger.Warnf("Unhandlded error %v", err)
 	case *internalErrors.ServerError:
 		h.logger.Warn(e.Message)
-		errText := fmt.Sprintf("Server error \n\n%s", e.Message)
-
-		h.messageProvider.ChannelMessageSendReply(context.ChannelId, errText, context.MessageId, context.GuildId)
+		msg := fmt.Sprintf("**Server error** \n%s", e.Message)
+		h.messageProvider.ChannelMessageSendReply(context.ChannelId, msg, context.MessageId, context.GuildId)
 	case *internalErrors.NotFoundError:
 		h.messageProvider.ChannelMessageSendReply(context.ChannelId, "Unknown player", context.MessageId, context.GuildId)
 	case *internalErrors.ApplicationError:
