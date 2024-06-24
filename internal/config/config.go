@@ -9,10 +9,11 @@ import (
 )
 
 const (
-	ConfigFile               = ".config"
-	DefLogLevel         uint = logger.INFO
-	DefCacheExpiryHours uint = 24
-	DefCacheSize        uint = 20
+	ConfigFile                 = ".config"
+	DefLogLevel           uint = logger.INFO
+	DefCacheExpiryHours   uint = 24
+	DefCacheSize          uint = 20
+	DefTrustInsecureCerts bool = false
 )
 
 var (
@@ -26,7 +27,8 @@ type config struct {
 		ExpiryHours uint
 		MaxSize     uint
 	}
-	Port *uint
+	Port                      *uint
+	TrustInsecureCertificates bool
 }
 
 func Read() (*config, error) {
@@ -46,6 +48,15 @@ func readFromEnv() (*config, error) {
 		r := parseUint(s)
 		return &r
 	})
+	trustInsecureCertificates := envValueOrDefault("trustInsecureCertificates", DefTrustInsecureCerts, func(s string) bool {
+		r, err := strconv.ParseBool(s)
+
+		if err != nil {
+			return false
+		}
+
+		return r
+	})
 
 	if token == nil {
 		return nil, ErrTokenNotSupplied
@@ -61,7 +72,8 @@ func readFromEnv() (*config, error) {
 			ExpiryHours: cacheExpiryHours,
 			MaxSize:     cacheMaxSize,
 		},
-		Port: port,
+		Port:                      port,
+		TrustInsecureCertificates: trustInsecureCertificates,
 	}, nil
 }
 
@@ -72,7 +84,8 @@ type fileConfig struct {
 		ExpiryHours *uint
 		MaxSize     *uint
 	}
-	Port *uint
+	Port                      *uint
+	TrustInsecureCertificates *bool
 }
 
 func readFromFile() (*config, error) {
@@ -104,7 +117,8 @@ func readFromFile() (*config, error) {
 			ExpiryHours: valueOrDefault(fileConfig.Cache.ExpiryHours, DefCacheExpiryHours),
 			MaxSize:     valueOrDefault(fileConfig.Cache.MaxSize, DefCacheSize),
 		},
-		Port: fileConfig.Port,
+		Port:                      fileConfig.Port,
+		TrustInsecureCertificates: valueOrDefault(fileConfig.TrustInsecureCertificates, DefTrustInsecureCerts),
 	}, nil
 }
 
