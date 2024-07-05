@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"aoe-bot/internal/list"
 	"aoe-bot/internal/logger"
 	"fmt"
 	"net/http"
@@ -13,13 +14,19 @@ import (
 )
 
 type bot struct {
-	logger   *logger.Logger
-	commands map[*regexp.Regexp]Command
-	Session  *discordgo.Session
-	prefix   string
+	logger              *logger.Logger
+	commands            map[*regexp.Regexp]Command
+	Session             *discordgo.Session
+	prefix              string
+	whitelistedChannels []string
 }
 
-func New(logger *logger.Logger, prefix, token string) (*bot, error) {
+func New(
+	logger *logger.Logger,
+	prefix,
+	token string,
+	whitelistedChannels []string,
+) (*bot, error) {
 	discord, err := discordgo.New("Bot " + token)
 
 	if err != nil {
@@ -27,9 +34,10 @@ func New(logger *logger.Logger, prefix, token string) (*bot, error) {
 	}
 
 	return &bot{
-		logger:  logger,
-		Session: discord,
-		prefix:  prefix,
+		logger:              logger,
+		Session:             discord,
+		prefix:              prefix,
+		whitelistedChannels: whitelistedChannels,
 	}, nil
 }
 
@@ -78,6 +86,12 @@ func (b *bot) Run(commands map[*regexp.Regexp]Command, port *uint) {
 func (b *bot) onMessage(session *discordgo.Session, message *discordgo.MessageCreate) {
 	// prevent responding to own messages
 	if message.Author.ID == session.State.User.ID {
+		return
+	}
+
+	// message was sent in a channel that was not whitelisted.
+	// if there are no entries in the list, no whitelisting should be applied
+	if len(b.whitelistedChannels) > 0 && !list.Contains(b.whitelistedChannels, message.ChannelID) {
 		return
 	}
 

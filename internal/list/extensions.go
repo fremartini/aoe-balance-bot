@@ -31,3 +31,12 @@ func Map[T, K any](iter []T, mapper func(T) K) []K {
 
 	return toReturn
 }
+
+func Contains[T comparable](iter []T, elem T) bool {
+	for _, a := range iter {
+		if a == elem {
+			return true
+		}
+	}
+	return false
+}
