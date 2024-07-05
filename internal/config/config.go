@@ -8,16 +8,67 @@ import (
 	"strconv"
 )
 
-const (
-	ConfigFile                 = ".config"
-	DefLogLevel           uint = logger.INFO
-	DefCacheExpiryHours   uint = 24
-	DefCacheSize          uint = 20
-	DefTrustInsecureCerts bool = false
-)
-
 var (
 	ErrTokenNotSupplied = errors.New("token not supplied")
+
+	tokenEntry = configEntry[*string]{
+		Key:          "token",
+		DefaultValue: nil,
+		ParseFunc:    func(s string) *string { return &s },
+	}
+
+	logLevelEntry = configEntry[uint]{
+		Key:          "logLevel",
+		DefaultValue: logger.INFO,
+		ParseFunc:    parseUint,
+	}
+
+	cacheExpiryHoursEntry = configEntry[uint]{
+		Key:          "cacheExpiryHours",
+		DefaultValue: 24,
+		ParseFunc:    parseUint,
+	}
+
+	cacheMaxSizeEntry = configEntry[uint]{
+		Key:          "cacheMaxSize",
+		DefaultValue: 20,
+		ParseFunc:    parseUint,
+	}
+
+	portEntry = configEntry[*uint]{
+		Key:          "port",
+		DefaultValue: nil,
+		ParseFunc: func(s string) *uint {
+			r := parseUint(s)
+			return &r
+		},
+	}
+
+	trustInsecureCertificatesEntry = configEntry[bool]{
+		Key:          "trustInsecureCertificates",
+		DefaultValue: false,
+		ParseFunc: func(s string) bool {
+			r, err := strconv.ParseBool(s)
+
+			if err != nil {
+				return false
+			}
+
+			return r
+		},
+	}
+
+	whitelistedChannelsEntry = configEntry[[]uint]{
+		Key:          "whitelistedChannels",
+		DefaultValue: []uint{},
+		ParseFunc: func(s string) []uint {
+			var arr []uint
+			if err := json.Unmarshal([]byte(s), &arr); err != nil {
+				return nil
+			}
+			return arr
+		},
+	}
 )
 
 type config struct {
@@ -29,34 +80,23 @@ type config struct {
 	}
 	Port                      *uint
 	TrustInsecureCertificates bool
+	WhitelistedChannels       []uint
+}
+
+type configEntry[K any] struct {
+	Key          string
+	DefaultValue K
+	ParseFunc    func(string) K
 }
 
 func Read() (*config, error) {
-	if _, err := os.Stat(ConfigFile); errors.Is(err, os.ErrNotExist) {
-		return readFromEnv()
-	}
-
-	return readFromFile()
-}
-
-func readFromEnv() (*config, error) {
-	token := envValueOrDefault("token", nil, func(s string) *string { return &s })
-	logLevel := envValueOrDefault("logLevel", DefLogLevel, parseUint)
-	cacheExpiryHours := envValueOrDefault("cacheExpiryHours", DefCacheExpiryHours, parseUint)
-	cacheMaxSize := envValueOrDefault("cacheMaxSize", DefCacheSize, parseUint)
-	port := envValueOrDefault("port", nil, func(s string) *uint {
-		r := parseUint(s)
-		return &r
-	})
-	trustInsecureCertificates := envValueOrDefault("trustInsecureCertificates", DefTrustInsecureCerts, func(s string) bool {
-		r, err := strconv.ParseBool(s)
-
-		if err != nil {
-			return false
-		}
-
-		return r
-	})
+	token := environmentValueOrDefault(tokenEntry)
+	logLevel := environmentValueOrDefault(logLevelEntry)
+	cacheExpiryHours := environmentValueOrDefault(cacheExpiryHoursEntry)
+	cacheMaxSize := environmentValueOrDefault(cacheMaxSizeEntry)
+	port := environmentValueOrDefault(portEntry)
+	trustInsecureCertificates := environmentValueOrDefault(trustInsecureCertificatesEntry)
+	whitelistedChannels := environmentValueOrDefault(whitelistedChannelsEntry)
 
 	if token == nil {
 		return nil, ErrTokenNotSupplied
@@ -74,70 +114,18 @@ func readFromEnv() (*config, error) {
 		},
 		Port:                      port,
 		TrustInsecureCertificates: trustInsecureCertificates,
+		WhitelistedChannels:       whitelistedChannels,
 	}, nil
 }
 
-type fileConfig struct {
-	Token    *string
-	LogLevel *uint
-	Cache    *struct {
-		ExpiryHours *uint
-		MaxSize     *uint
-	}
-	Port                      *uint
-	TrustInsecureCertificates *bool
-}
-
-func readFromFile() (*config, error) {
-	content, err := os.ReadFile(ConfigFile)
-
-	if err != nil {
-		return nil, err
-	}
-
-	fileConfig := &fileConfig{}
-
-	err = json.Unmarshal(content, fileConfig)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if fileConfig.Token == nil {
-		return nil, ErrTokenNotSupplied
-	}
-
-	return &config{
-		Token:    *fileConfig.Token,
-		LogLevel: valueOrDefault(fileConfig.LogLevel, DefLogLevel),
-		Cache: &struct {
-			ExpiryHours uint
-			MaxSize     uint
-		}{
-			ExpiryHours: valueOrDefault(fileConfig.Cache.ExpiryHours, DefCacheExpiryHours),
-			MaxSize:     valueOrDefault(fileConfig.Cache.MaxSize, DefCacheSize),
-		},
-		Port:                      fileConfig.Port,
-		TrustInsecureCertificates: valueOrDefault(fileConfig.TrustInsecureCertificates, DefTrustInsecureCerts),
-	}, nil
-}
-
-func envValueOrDefault[K any](env string, def K, f func(string) K) K {
-	v := os.Getenv(env)
+func environmentValueOrDefault[K any](e configEntry[K]) K {
+	v := os.Getenv(e.Key)
 
 	if v == "" {
-		return def
+		return e.DefaultValue
 	}
 
-	return f(v)
-}
-
-func valueOrDefault[K any](a *K, def K) K {
-	if a == nil {
-		return def
-	}
-
-	return *a
+	return e.ParseFunc(v)
 }
 
 func parseUint(s string) uint {

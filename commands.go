@@ -28,13 +28,13 @@ func New(
 	return map[*regexp.Regexp]bot.Command{
 		regexp.MustCompile(aoe2LobbyRegex): {
 			Handle: func(context *bot.Context, args []string) {
-				discordAPI := discord.New(session)
+				discordAPI := discord.New(session, logger)
 
 				librematchApi := librematch.New(logger, playerCache)
 
-				teamStrategy := strategies.NewBruteForce()
+				teamBalanceStrategy := strategies.NewBruteForce()
 
-				handler := balance.New(librematchApi, discordAPI, teamStrategy, logger)
+				handler := balance.New(librematchApi, discordAPI, teamBalanceStrategy, logger)
 
 				handler.Handle(context, args)
 			},
@@ -46,7 +46,7 @@ func New(
 				// discard command name
 				args = args[1:]
 
-				discordAPI := discord.New(session)
+				discordAPI := discord.New(session, logger)
 
 				if len(args) == 0 {
 					discordAPI.ChannelMessageSendReply(context.ChannelId, "Missing game id", context.MessageId, context.GuildId)
@@ -55,9 +55,9 @@ func New(
 
 				librematchApi := librematch.New(logger, playerCache)
 
-				teamStrategy := strategies.NewBruteForce()
+				teamBalanceStrategy := strategies.NewBruteForce()
 
-				handler := balance.New(librematchApi, discordAPI, teamStrategy, logger)
+				handler := balance.New(librematchApi, discordAPI, teamBalanceStrategy, logger)
 
 				handler.Handle(context, args)
 			},
