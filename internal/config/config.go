@@ -36,7 +36,7 @@ var (
 	}
 
 	portEntry = configEntry[*uint]{
-		Key:          "port",
+		Key:          "PORT",
 		DefaultValue: nil,
 		ParseFunc: func(s string) *uint {
 			r := parseUint(s)

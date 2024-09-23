@@ -16,6 +16,6 @@ And provides the following optional parameters:
     - 2: `INFO`
 - `cacheExpiryHours` How long player data should be retained in the cache (default: `24` hours)
 - `cacheMaxSize` How many players data can be stored at one time before stale data will be removed (default `20` entities)
-- `port` Port used for heartbeat (If this is not provided no server will be started)
+- `PORT` Port used for heartbeat (If this is not provided no server will be started). Must be capitalized
 - `trustInsecureCertificates` Disable certificate validation when making API calls to get game data
 - `whitelistedChannels` If this is set, the bot will only react to messages in these channels (defaults to all channels). Channel IDs
