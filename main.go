@@ -30,12 +30,18 @@ func main() {
 		return fmt.Sprintf("%v", c)
 	})
 
+	portStr := "nil"
+	if config.Port != nil {
+		portStr = fmt.Sprintf("%d", *config.Port)
+	}
+
 	logger.Infof(
-		"Log level %d, Cache expiry %d, Cache size %d, Trust insecure certificates %t, Whitelisted channels [%s]",
+		"Log level %d, Cache expiry %d, Cache size %d, Trust insecure certificates %t, port %s, Whitelisted channels [%s]",
 		config.LogLevel,
 		config.Cache.ExpiryHours,
 		config.Cache.MaxSize,
 		config.TrustInsecureCertificates,
+		portStr,
 		strings.Join(channelStr, ","))
 
 	b, err := bot.New(logger, Prefix, config.Token, channelStr)
