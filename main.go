@@ -34,8 +34,7 @@ func main() {
 	}
 
 	log.Printf(
-		"Log level %d, Cache expiry %d, Cache size %d, Trust insecure certificates %t, port %s, Whitelisted channels [%s]",
-		config.LogLevel,
+		"Cache expiry %d, Cache size %d, Trust insecure certificates %t, port %s, Whitelisted channels [%s]",
 		config.Cache.ExpiryHours,
 		config.Cache.MaxSize,
 		config.TrustInsecureCertificates,
