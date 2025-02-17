@@ -6,9 +6,9 @@ import (
 	"aoe-bot/internal/config"
 	"aoe-bot/internal/domain"
 	"aoe-bot/internal/list"
-	"aoe-bot/internal/logger"
 	"crypto/tls"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 )
@@ -24,8 +24,6 @@ func main() {
 		panic(err)
 	}
 
-	logger := logger.New(config.LogLevel)
-
 	channelStr := list.Map(config.WhitelistedChannels, func(c uint) string {
 		return fmt.Sprintf("%v", c)
 	})
@@ -35,16 +33,15 @@ func main() {
 		portStr = fmt.Sprintf("%d", *config.Port)
 	}
 
-	logger.Infof(
-		"Log level %d, Cache expiry %d, Cache size %d, Trust insecure certificates %t, port %s, Whitelisted channels [%s]",
-		config.LogLevel,
+	log.Printf(
+		"Cache expiry %d, Cache size %d, Trust insecure certificates %t, port %s, Whitelisted channels [%s]",
 		config.Cache.ExpiryHours,
 		config.Cache.MaxSize,
 		config.TrustInsecureCertificates,
 		portStr,
 		strings.Join(channelStr, ","))
 
-	b, err := bot.New(logger, Prefix, config.Token, channelStr)
+	b, err := bot.New(Prefix, config.Token, channelStr)
 
 	if err != nil {
 		panic(err)
@@ -54,9 +51,9 @@ func main() {
 		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	}
 
-	playerCache := cache.New[uint, *domain.Player](config.Cache.ExpiryHours, config.Cache.MaxSize, logger)
+	playerCache := cache.New[uint, *domain.Player](config.Cache.ExpiryHours, config.Cache.MaxSize)
 
-	commands := New(b.Session, logger, playerCache, Prefix)
+	commands := New(b.Session, playerCache, Prefix)
 
 	b.Run(commands, config.Port)
 }

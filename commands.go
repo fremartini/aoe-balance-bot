@@ -8,7 +8,6 @@ import (
 	"aoe-bot/internal/discord"
 	"aoe-bot/internal/domain"
 	"aoe-bot/internal/librematch"
-	"aoe-bot/internal/logger"
 	"fmt"
 	"regexp"
 
@@ -21,20 +20,19 @@ const (
 
 func New(
 	session *discordgo.Session,
-	logger *logger.Logger,
 	playerCache *cache.Cache[uint, *domain.Player],
 	prefix string,
 ) map[*regexp.Regexp]bot.Command {
 	return map[*regexp.Regexp]bot.Command{
 		regexp.MustCompile(aoe2LobbyRegex): {
 			Handle: func(context *bot.Context, args []string) {
-				discordAPI := discord.New(session, logger)
+				discordAPI := discord.New(session)
 
-				librematchApi := librematch.New(logger, playerCache)
+				librematchApi := librematch.New(playerCache)
 
 				teamBalanceStrategy := strategies.NewBruteForce()
 
-				handler := balance.New(librematchApi, discordAPI, teamBalanceStrategy, logger)
+				handler := balance.New(librematchApi, discordAPI, teamBalanceStrategy)
 
 				handler.Handle(context, args)
 			},
@@ -46,18 +44,18 @@ func New(
 				// discard command name
 				args = args[1:]
 
-				discordAPI := discord.New(session, logger)
+				discordAPI := discord.New(session)
 
 				if len(args) == 0 {
 					discordAPI.ChannelMessageSendReply(context.ChannelId, "Missing game id", context.MessageId, context.GuildId)
 					return
 				}
 
-				librematchApi := librematch.New(logger, playerCache)
+				librematchApi := librematch.New(playerCache)
 
 				teamBalanceStrategy := strategies.NewBruteForce()
 
-				handler := balance.New(librematchApi, discordAPI, teamBalanceStrategy, logger)
+				handler := balance.New(librematchApi, discordAPI, teamBalanceStrategy)
 
 				handler.Handle(context, args)
 			},

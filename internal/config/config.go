@@ -1,7 +1,6 @@
 package config
 
 import (
-	"aoe-bot/internal/logger"
 	"encoding/json"
 	"errors"
 	"os"
@@ -15,12 +14,6 @@ var (
 		Key:          "token",
 		DefaultValue: nil,
 		ParseFunc:    func(s string) *string { return &s },
-	}
-
-	logLevelEntry = configEntry[uint]{
-		Key:          "logLevel",
-		DefaultValue: logger.INFO,
-		ParseFunc:    parseUint,
 	}
 
 	cacheExpiryHoursEntry = configEntry[uint]{
@@ -72,9 +65,8 @@ var (
 )
 
 type config struct {
-	Token    string
-	LogLevel uint
-	Cache    *struct {
+	Token string
+	Cache *struct {
 		ExpiryHours uint
 		MaxSize     uint
 	}
@@ -91,7 +83,6 @@ type configEntry[K any] struct {
 
 func Read() (*config, error) {
 	token := environmentValueOrDefault(tokenEntry)
-	logLevel := environmentValueOrDefault(logLevelEntry)
 	cacheExpiryHours := environmentValueOrDefault(cacheExpiryHoursEntry)
 	cacheMaxSize := environmentValueOrDefault(cacheMaxSizeEntry)
 	port := environmentValueOrDefault(portEntry)
@@ -103,8 +94,7 @@ func Read() (*config, error) {
 	}
 
 	return &config{
-		Token:    *token,
-		LogLevel: logLevel,
+		Token: *token,
 		Cache: &struct {
 			ExpiryHours uint
 			MaxSize     uint
