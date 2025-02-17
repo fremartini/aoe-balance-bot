@@ -27,7 +27,7 @@ func New[T, K comparable](expiry uint, maxSize uint) *Cache[T, K] {
 
 func (c *Cache[T, K]) Insert(key T, value K) {
 	if len(c.entries) >= c.maxSize {
-		log.Printf("Cache is full. Removing expired entries ...")
+		log.Print("Cache is full. Removing expired entries ...")
 
 		c.removeOldEntries()
 	}

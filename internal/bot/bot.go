@@ -72,7 +72,7 @@ func (b *bot) Run(commands map[*regexp.Regexp]Command, port *uint) {
 
 	b.Session.AddHandler(b.onInteraction)
 
-	log.Printf("Starting bot")
+	log.Print("Starting bot")
 
 	err := b.Session.Open()
 
@@ -99,7 +99,7 @@ func (b *bot) Run(commands map[*regexp.Regexp]Command, port *uint) {
 			panic(err)
 		}
 	} else {
-		log.Printf("No port provided. Web server not starting")
+		log.Print("No port provided. Web server not starting")
 	}
 
 	c := make(chan os.Signal, 1)

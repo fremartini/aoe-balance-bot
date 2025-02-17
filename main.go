@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	Prefix = "@"
+	Prefix = "!"
 )
 
 func main() {
