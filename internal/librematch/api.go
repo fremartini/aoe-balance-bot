@@ -5,7 +5,6 @@ import (
 	"aoe-bot/internal/domain"
 	"aoe-bot/internal/errors"
 	"aoe-bot/internal/list"
-	"aoe-bot/internal/logger"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,8 +13,7 @@ import (
 )
 
 type api struct {
-	logger *logger.Logger
-	cache  *cache.Cache[uint, *domain.Player]
+	cache *cache.Cache[uint, *domain.Player]
 }
 
 const (
@@ -24,10 +22,9 @@ const (
 	BASE_URL             = "https://aoe-api.reliclink.com"
 )
 
-func New(logger *logger.Logger, cache *cache.Cache[uint, *domain.Player]) *api {
+func New(cache *cache.Cache[uint, *domain.Player]) *api {
 	return &api{
-		logger: logger,
-		cache:  cache,
+		cache: cache,
 	}
 }
 

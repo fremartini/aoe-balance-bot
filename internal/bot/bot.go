@@ -2,8 +2,8 @@ package bot
 
 import (
 	"aoe-bot/internal/list"
-	"aoe-bot/internal/logger"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -14,7 +14,6 @@ import (
 )
 
 type bot struct {
-	logger              *logger.Logger
 	commands            map[*regexp.Regexp]Command
 	Session             *discordgo.Session
 	prefix              string
@@ -22,7 +21,6 @@ type bot struct {
 }
 
 func New(
-	logger *logger.Logger,
 	prefix,
 	token string,
 	whitelistedChannels []string,
@@ -34,11 +32,35 @@ func New(
 	}
 
 	return &bot{
-		logger:              logger,
 		Session:             discord,
 		prefix:              prefix,
 		whitelistedChannels: whitelistedChannels,
 	}, nil
+}
+
+func (b *bot) onInteraction(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	if i.Type != discordgo.InteractionMessageComponent {
+		return
+	}
+
+	data := i.MessageComponentData()
+
+	// '|' is used as the delimiter. If this is present the command carries additional data
+	if strings.Contains(data.CustomID, "|") {
+		args := strings.Split(data.CustomID, "|")
+		command := args[0]
+		rest := args[1:]
+
+		commandWithPrefix := fmt.Sprintf("%s%s", b.prefix, command)
+		newArgs := append([]string{commandWithPrefix}, rest...)
+
+		b.tryCommand(commandWithPrefix, i.Message, newArgs)
+	}
+
+	// fallback - ignore the "This interaction failed"
+	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseDeferredMessageUpdate,
+	})
 }
 
 func (b *bot) Run(commands map[*regexp.Regexp]Command, port *uint) {
@@ -48,7 +70,9 @@ func (b *bot) Run(commands map[*regexp.Regexp]Command, port *uint) {
 
 	b.Session.AddHandler(b.onMessage)
 
-	b.logger.Info("Starting bot")
+	b.Session.AddHandler(b.onInteraction)
+
+	log.Printf("Starting bot")
 
 	err := b.Session.Open()
 
@@ -61,7 +85,7 @@ func (b *bot) Run(commands map[*regexp.Regexp]Command, port *uint) {
 	if port != nil {
 		m := http.NewServeMux()
 
-		b.logger.Infof("Starting web server on port %d", *port)
+		log.Printf("Starting web server on port %d", *port)
 
 		server := http.Server{
 			Addr:    fmt.Sprintf(":%d", *port),
@@ -75,7 +99,7 @@ func (b *bot) Run(commands map[*regexp.Regexp]Command, port *uint) {
 			panic(err)
 		}
 	} else {
-		b.logger.Info("No port provided. Web server not starting")
+		log.Printf("No port provided. Web server not starting")
 	}
 
 	c := make(chan os.Signal, 1)
@@ -105,12 +129,16 @@ func (b *bot) onMessage(session *discordgo.Session, message *discordgo.MessageCr
 		return
 	}
 
+	b.tryCommand(action, message.Message, args)
+}
+
+func (b *bot) tryCommand(action string, message *discordgo.Message, args []string) {
 	for k, v := range b.commands {
 		if !k.MatchString(action) {
 			continue
 		}
 
-		b.logger.Infof("Handling action: %s %s", action, args)
+		log.Printf("Handling action: %s %s", action, args)
 
 		context := &Context{
 			UserId:    message.Author.ID,

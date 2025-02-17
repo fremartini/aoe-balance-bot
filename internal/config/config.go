@@ -1,7 +1,6 @@
 package config
 
 import (
-	"aoe-bot/internal/logger"
 	"encoding/json"
 	"errors"
 	"os"
@@ -18,9 +17,8 @@ var (
 	}
 
 	logLevelEntry = configEntry[uint]{
-		Key:          "logLevel",
-		DefaultValue: logger.INFO,
-		ParseFunc:    parseUint,
+		Key:       "logLevel",
+		ParseFunc: parseUint,
 	}
 
 	cacheExpiryHoursEntry = configEntry[uint]{

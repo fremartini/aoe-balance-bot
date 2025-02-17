@@ -5,8 +5,8 @@ import (
 	"aoe-bot/internal/domain"
 	internalErrors "aoe-bot/internal/errors"
 	"aoe-bot/internal/list"
-	"aoe-bot/internal/logger"
 	"fmt"
+	"log"
 	"strings"
 )
 
@@ -18,6 +18,7 @@ type gameDataProvider interface {
 type messageProvider interface {
 	ChannelMessageSendReply(channelID, content, messageId, guildId string) error
 	ChannelMessageDelete(channelID string, messageID string) error
+	ChannelMessageSendContentWithButton(channelID, buttonLabel, payload, content string) error
 }
 
 type teamProvider interface {
@@ -28,27 +29,24 @@ type handler struct {
 	gameDataProvider gameDataProvider
 	messageProvider  messageProvider
 	teamProvider     teamProvider
-	logger           *logger.Logger
 }
 
 func New(
 	gameDataProvider gameDataProvider,
 	messageProvider messageProvider,
 	teamProvider teamProvider,
-	logger *logger.Logger,
 ) *handler {
 	return &handler{
 		gameDataProvider: gameDataProvider,
 		messageProvider:  messageProvider,
 		teamProvider:     teamProvider,
-		logger:           logger,
 	}
 }
 
 func (h *handler) Handle(context *bot.Context, args []string) {
 	lobbyId := parseAoeLobbyId(args)
 
-	h.logger.Infof("Trying to find lobby with id %s", lobbyId)
+	log.Printf("Trying to find lobby with id %s", lobbyId)
 
 	lobbies, err := h.gameDataProvider.GetLobbies()
 
@@ -64,7 +62,7 @@ func (h *handler) Handle(context *bot.Context, args []string) {
 
 	if !ok {
 		e := fmt.Sprintf("Public lobby %s not found", lobbyId)
-		h.logger.Info(e)
+		log.Print(e)
 
 		h.printLobbyNotFound(context, lobbyId)
 
@@ -73,7 +71,7 @@ func (h *handler) Handle(context *bot.Context, args []string) {
 
 	memberIds := (**lobby).Members
 
-	h.logger.Infof("Found lobby %s (%s). It has %d players", (*lobby).Title, lobbyId, len(memberIds))
+	log.Printf("Found lobby %s (%s). It has %d players", (*lobby).Title, lobbyId, len(memberIds))
 
 	players, err := h.gameDataProvider.GetPlayers(memberIds)
 
@@ -112,7 +110,7 @@ func (h *handler) printLobbyNotFound(context *bot.Context, lobbyId string) {
 
 	sb.WriteString(fmt.Sprintf(`If this is an error, you can [click here to join](https://aoe2lobby.com/j/%s)`, lobbyId))
 
-	h.messageProvider.ChannelMessageSendReply(context.ChannelId, sb.String(), context.MessageId, context.GuildId)
+	h.messageProvider.ChannelMessageSendContentWithButton(context.ChannelId, "Retry", lobbyId, sb.String())
 
 	h.messageProvider.ChannelMessageDelete(context.ChannelId, context.MessageId)
 }
@@ -154,7 +152,7 @@ func (h *handler) printLobbyOutput(context *bot.Context, teams []*Team, lobby *d
 
 	sb.WriteString(fmt.Sprintf(`[Click here to join](https://aoe2lobby.com/j/%d)`, lobby.Id))
 
-	h.messageProvider.ChannelMessageSendReply(context.ChannelId, sb.String(), context.MessageId, context.GuildId)
+	h.messageProvider.ChannelMessageSendContentWithButton(context.ChannelId, "Recalculate", fmt.Sprintf("%v", lobby.Id), sb.String())
 
 	h.messageProvider.ChannelMessageDelete(context.ChannelId, context.MessageId)
 }
@@ -162,9 +160,9 @@ func (h *handler) printLobbyOutput(context *bot.Context, teams []*Team, lobby *d
 func (h *handler) handleError(err error, context *bot.Context) {
 	switch e := err.(type) {
 	default:
-		h.logger.Warnf("Unhandlded error %v", err)
+		log.Printf("Unhandlded error %v", err)
 	case *internalErrors.ServerError:
-		h.logger.Warn(e.Message)
+		log.Print(e.Message)
 		msg := fmt.Sprintf("**Server error** \n%s", e.Message)
 		h.messageProvider.ChannelMessageSendReply(context.ChannelId, msg, context.MessageId, context.GuildId)
 	case *internalErrors.NotFoundError:

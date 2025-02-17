@@ -1,15 +1,14 @@
 package cache
 
 import (
-	"aoe-bot/internal/logger"
 	"encoding/json"
+	"log"
 	"time"
 )
 
 type Cache[T, K comparable] struct {
 	entries map[T]entry[K]
 	expiry  float64
-	logger  *logger.Logger
 	maxSize int
 }
 
@@ -18,18 +17,17 @@ type entry[T any] struct {
 	lastAccessed time.Time
 }
 
-func New[T, K comparable](expiry uint, maxSize uint, logger *logger.Logger) *Cache[T, K] {
+func New[T, K comparable](expiry uint, maxSize uint) *Cache[T, K] {
 	return &Cache[T, K]{
 		entries: map[T]entry[K]{},
 		expiry:  float64(expiry),
-		logger:  logger,
 		maxSize: int(maxSize),
 	}
 }
 
 func (c *Cache[T, K]) Insert(key T, value K) {
 	if len(c.entries) >= c.maxSize {
-		c.logger.Info("Cache is full. Removing expired entries ...")
+		log.Printf("Cache is full. Removing expired entries ...")
 
 		c.removeOldEntries()
 	}
@@ -40,7 +38,7 @@ func (c *Cache[T, K]) Insert(key T, value K) {
 		lastAccessed: now,
 	}
 
-	c.logger.Infof("Inserted %v (%v) into cache", key, prettyPrint(value))
+	log.Printf("Inserted %v (%v) into cache", key, prettyPrint(value))
 
 	c.entries[key] = v
 }
@@ -55,14 +53,14 @@ func (c *Cache[T, K]) Contains(key T) (*K, bool) {
 	now := time.Now()
 
 	if c.isStale(now, value.lastAccessed) {
-		c.logger.Infof("Stale data. Removing %v (%v) from cache", key, prettyPrint(value.value))
+		log.Printf("Stale data. Removing %v (%v) from cache", key, prettyPrint(value.value))
 		delete(c.entries, key)
 		return nil, false
 	}
 
 	value.lastAccessed = now
 
-	c.logger.Infof("Found %v (%v) in cache", key, prettyPrint(value.value))
+	log.Printf("Found %v (%v) in cache", key, prettyPrint(value.value))
 
 	return &value.value, true
 }
@@ -75,7 +73,7 @@ func (c *Cache[T, K]) removeOldEntries() {
 			continue
 		}
 
-		c.logger.Infof("Deleted %v (%v) from cache", key, prettyPrint(value.value))
+		log.Printf("Deleted %v (%v) from cache", key, prettyPrint(value.value))
 		delete(c.entries, key)
 	}
 }
