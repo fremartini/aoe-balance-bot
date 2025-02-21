@@ -122,13 +122,13 @@ func (h *handler) printLobbyNotFound(context *bot.Context, lobbyId string) error
 		Url:   fmt.Sprintf(`https://aoe2lobby.com/j/%s`, lobbyId),
 	}
 
-	err := h.messageProvider.ChannelMessageSendContentWithButton(context.ChannelId, sb.String(), []*ui.Button{retryButton, joinButton})
+	err := h.messageProvider.ChannelMessageDelete(context.ChannelId, context.MessageId)
 
 	if err != nil {
 		return err
 	}
 
-	return h.messageProvider.ChannelMessageDelete(context.ChannelId, context.MessageId)
+	return h.messageProvider.ChannelMessageSendContentWithButton(context.ChannelId, sb.String(), []*ui.Button{retryButton, joinButton})
 }
 
 func (h *handler) printLobbyOutput(context *bot.Context, teams []*Team, lobby *domain.Lobby) error {
@@ -185,13 +185,13 @@ func (h *handler) printLobbyOutput(context *bot.Context, teams []*Team, lobby *d
 		Url:   fmt.Sprintf(`https://aoe2lobby.com/j/%v`, lobby.Id),
 	}
 
-	err := h.messageProvider.ChannelMessageSendContentWithButton(context.ChannelId, sb.String(), []*ui.Button{recalculateButton, joinButton})
+	err := h.messageProvider.ChannelMessageDelete(context.ChannelId, context.MessageId)
 
 	if err != nil {
 		return err
 	}
 
-	return h.messageProvider.ChannelMessageDelete(context.ChannelId, context.MessageId)
+	return h.messageProvider.ChannelMessageSendContentWithButton(context.ChannelId, sb.String(), []*ui.Button{recalculateButton, joinButton})
 }
 
 func (h *handler) handleError(err error, context *bot.Context) {
