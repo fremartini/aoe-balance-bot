@@ -25,7 +25,7 @@ func New(
 ) map[*regexp.Regexp]bot.Command {
 	return map[*regexp.Regexp]bot.Command{
 		regexp.MustCompile(aoe2LobbyRegex): {
-			Handle: func(context *bot.Context, args []string) {
+			Handle: func(context *bot.Context, args []string) error {
 				discordAPI := discord.New(session)
 
 				librematchApi := librematch.New(playerCache)
@@ -34,13 +34,13 @@ func New(
 
 				handler := balance.New(librematchApi, discordAPI, teamBalanceStrategy)
 
-				handler.Handle(context, args)
+				return handler.Handle(context, args)
 			},
 			Hint:   "Create two teams of players in a lobby",
 			Hidden: true,
 		},
 		withPrefix(prefix, "balance"): {
-			Handle: func(context *bot.Context, args []string) {
+			Handle: func(context *bot.Context, args []string) error {
 				// discard command name
 				args = args[1:]
 
@@ -48,7 +48,7 @@ func New(
 
 				if len(args) == 0 {
 					discordAPI.ChannelMessageSendReply(context.ChannelId, "Missing game id", context.MessageId, context.GuildId)
-					return
+					return nil
 				}
 
 				librematchApi := librematch.New(playerCache)
@@ -57,7 +57,7 @@ func New(
 
 				handler := balance.New(librematchApi, discordAPI, teamBalanceStrategy)
 
-				handler.Handle(context, args)
+				return handler.Handle(context, args)
 			},
 			Hint:   "Create two teams of players in a lobby",
 			Hidden: false,

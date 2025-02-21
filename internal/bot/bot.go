@@ -43,6 +43,10 @@ func (b *bot) onInteraction(s *discordgo.Session, i *discordgo.InteractionCreate
 		return
 	}
 
+	if len(b.whitelistedChannels) > 0 && !list.Contains(b.whitelistedChannels, i.ChannelID) {
+		return
+	}
+
 	data := i.MessageComponentData()
 
 	// '|' is used as the delimiter. If this is present the command carries additional data
@@ -148,7 +152,11 @@ func (b *bot) tryCommand(action string, message *discordgo.Message, args []strin
 			Command:   action,
 		}
 
-		v.Handle(context, args)
+		err := v.Handle(context, args)
+
+		if err != nil {
+			log.Print(err)
+		}
 
 		break
 	}

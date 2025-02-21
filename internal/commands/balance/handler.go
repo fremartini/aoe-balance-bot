@@ -47,7 +47,7 @@ func New(
 	}
 }
 
-func (h *handler) Handle(context *bot.Context, args []string) {
+func (h *handler) Handle(context *bot.Context, args []string) error {
 	lobbyId := parseAoeLobbyId(args)
 
 	log.Printf("Trying to find lobby with id %s", lobbyId)
@@ -56,7 +56,7 @@ func (h *handler) Handle(context *bot.Context, args []string) {
 
 	if err != nil {
 		h.handleError(err, context)
-		return
+		return nil
 	}
 
 	lobby, ok := list.FirstWhere(lobbies, func(lobby *domain.Lobby) bool {
@@ -68,9 +68,7 @@ func (h *handler) Handle(context *bot.Context, args []string) {
 		e := fmt.Sprintf("Public lobby %s not found", lobbyId)
 		log.Print(e)
 
-		h.printLobbyNotFound(context, lobbyId)
-
-		return
+		return h.printLobbyNotFound(context, lobbyId)
 	}
 
 	memberIds := (**lobby).Members
@@ -81,7 +79,7 @@ func (h *handler) Handle(context *bot.Context, args []string) {
 
 	if err != nil {
 		h.handleError(err, context)
-		return
+		return nil
 	}
 
 	playersWithELO := list.Map(players, func(p *domain.Player) *Player {
@@ -98,10 +96,10 @@ func (h *handler) Handle(context *bot.Context, args []string) {
 
 	team1, team2 := h.teamProvider.CreateTeams(playersWithELO)
 
-	h.printLobbyOutput(context, []*Team{team1, team2}, *lobby)
+	return h.printLobbyOutput(context, []*Team{team1, team2}, *lobby)
 }
 
-func (h *handler) printLobbyNotFound(context *bot.Context, lobbyId string) {
+func (h *handler) printLobbyNotFound(context *bot.Context, lobbyId string) error {
 	var sb strings.Builder
 
 	sb.WriteString(fmt.Sprintf("<@%s> used %s", context.UserId, context.Command))
@@ -124,12 +122,16 @@ func (h *handler) printLobbyNotFound(context *bot.Context, lobbyId string) {
 		Url:   fmt.Sprintf(`https://aoe2lobby.com/j/%s`, lobbyId),
 	}
 
-	h.messageProvider.ChannelMessageSendContentWithButton(context.ChannelId, sb.String(), []*ui.Button{retryButton, joinButton})
+	err := h.messageProvider.ChannelMessageSendContentWithButton(context.ChannelId, sb.String(), []*ui.Button{retryButton, joinButton})
 
-	h.messageProvider.ChannelMessageDelete(context.ChannelId, context.MessageId)
+	if err != nil {
+		return err
+	}
+
+	return h.messageProvider.ChannelMessageDelete(context.ChannelId, context.MessageId)
 }
 
-func (h *handler) printLobbyOutput(context *bot.Context, teams []*Team, lobby *domain.Lobby) {
+func (h *handler) printLobbyOutput(context *bot.Context, teams []*Team, lobby *domain.Lobby) error {
 	var sb strings.Builder
 
 	sb.WriteString(fmt.Sprintf("<@%s> used %s", context.UserId, context.Command))
@@ -174,7 +176,7 @@ func (h *handler) printLobbyOutput(context *bot.Context, teams []*Team, lobby *d
 	recalculateButton := &ui.Button{
 		Label: "Recalculate",
 		Style: uint(discordgo.PrimaryButton),
-		Id:    fmt.Sprintf("%v", lobby.Id),
+		Id:    fmt.Sprintf("%s|%v", "balance", lobby.Id),
 	}
 
 	joinButton := &ui.Button{
@@ -183,9 +185,13 @@ func (h *handler) printLobbyOutput(context *bot.Context, teams []*Team, lobby *d
 		Url:   fmt.Sprintf(`https://aoe2lobby.com/j/%v`, lobby.Id),
 	}
 
-	h.messageProvider.ChannelMessageSendContentWithButton(context.ChannelId, sb.String(), []*ui.Button{recalculateButton, joinButton})
+	err := h.messageProvider.ChannelMessageSendContentWithButton(context.ChannelId, sb.String(), []*ui.Button{recalculateButton, joinButton})
 
-	h.messageProvider.ChannelMessageDelete(context.ChannelId, context.MessageId)
+	if err != nil {
+		return err
+	}
+
+	return h.messageProvider.ChannelMessageDelete(context.ChannelId, context.MessageId)
 }
 
 func (h *handler) handleError(err error, context *bot.Context) {

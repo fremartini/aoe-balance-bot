@@ -36,9 +36,7 @@ func (a *api) ChannelMessageSendReply(channelID, content, messageId, guildId str
 }
 
 func (a *api) ChannelMessageDelete(channelID, messageID string) error {
-	err := a.session.ChannelMessageDelete(channelID, messageID)
-
-	return err
+	return a.session.ChannelMessageDelete(channelID, messageID)
 }
 
 func (a *api) ChannelMessageSendContentWithButton(channelId, content string, buttons []*ui.Button) error {
