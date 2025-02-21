@@ -1,7 +1,8 @@
 package discord
 
 import (
-	"fmt"
+	"aoe-bot/internal/list"
+	"aoe-bot/internal/ui"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -40,20 +41,20 @@ func (a *api) ChannelMessageDelete(channelID, messageID string) error {
 	return err
 }
 
-func (a *api) ChannelMessageSendContentWithButton(channelID, buttonLabel, payload, content string) error {
-	customIdWithPayload := fmt.Sprintf("%s|%s", "balance", payload)
-
-	button := &discordgo.Button{
-		Label:    buttonLabel,
-		Style:    discordgo.PrimaryButton,
-		CustomID: customIdWithPayload,
-	}
-
-	_, err := a.session.ChannelMessageSendComplex(channelID, &discordgo.MessageSend{
+func (a *api) ChannelMessageSendContentWithButton(channelId, content string, buttons []*ui.Button) error {
+	goButtons := list.Map(buttons, func(b *ui.Button) discordgo.MessageComponent {
+		return &discordgo.Button{
+			Label:    b.Label,
+			Style:    discordgo.ButtonStyle(b.Style),
+			CustomID: b.Id,
+			URL:      b.Url,
+		}
+	})
+	_, err := a.session.ChannelMessageSendComplex(channelId, &discordgo.MessageSend{
 		Content: content,
 		Components: []discordgo.MessageComponent{
 			&discordgo.ActionsRow{
-				Components: []discordgo.MessageComponent{button},
+				Components: goButtons,
 			},
 		},
 	})
