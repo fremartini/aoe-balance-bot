@@ -51,6 +51,12 @@ var (
 		},
 	}
 
+	prefixEntry = configEntry[string]{
+		Key:          "prefix",
+		DefaultValue: "!",
+		ParseFunc:    func(s string) string { return s },
+	}
+
 	whitelistedChannelsEntry = configEntry[[]uint]{
 		Key:          "whitelistedChannels",
 		DefaultValue: []uint{},
@@ -73,6 +79,7 @@ type config struct {
 	Port                      *uint
 	TrustInsecureCertificates bool
 	WhitelistedChannels       []uint
+	Prefix                    string
 }
 
 type configEntry[K any] struct {
@@ -88,6 +95,7 @@ func Read() (*config, error) {
 	port := environmentValueOrDefault(portEntry)
 	trustInsecureCertificates := environmentValueOrDefault(trustInsecureCertificatesEntry)
 	whitelistedChannels := environmentValueOrDefault(whitelistedChannelsEntry)
+	prefix := environmentValueOrDefault(prefixEntry)
 
 	if token == nil {
 		return nil, ErrTokenNotSupplied
@@ -105,6 +113,7 @@ func Read() (*config, error) {
 		Port:                      port,
 		TrustInsecureCertificates: trustInsecureCertificates,
 		WhitelistedChannels:       whitelistedChannels,
+		Prefix:                    prefix,
 	}, nil
 }
 

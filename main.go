@@ -13,10 +13,6 @@ import (
 	"strings"
 )
 
-const (
-	Prefix = "!"
-)
-
 func main() {
 	config, err := config.Read()
 
@@ -34,14 +30,15 @@ func main() {
 	}
 
 	log.Printf(
-		"cache expiry %d hours, cache size %d entries, trust insecure certificates %t, port %s, whitelisted channels [%s]",
+		"cache expiry %d hours, cache size %d entries, trust insecure certificates %t, port %s, whitelisted channels [%s], prefix '%s'",
 		config.Cache.ExpiryHours,
 		config.Cache.MaxSize,
 		config.TrustInsecureCertificates,
 		portStr,
-		strings.Join(channelStr, ","))
+		strings.Join(channelStr, ","),
+		config.Prefix)
 
-	b, err := bot.New(Prefix, config.Token, channelStr)
+	b, err := bot.New(config.Prefix, config.Token, channelStr)
 
 	if err != nil {
 		panic(err)
@@ -53,7 +50,7 @@ func main() {
 
 	playerCache := cache.New[uint, *domain.Player](config.Cache.ExpiryHours, config.Cache.MaxSize)
 
-	commands := New(b.Session, playerCache, Prefix)
+	commands := New(b.Session, playerCache, config.Prefix)
 
 	b.Run(commands, config.Port)
 }
