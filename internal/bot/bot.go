@@ -43,25 +43,24 @@ func (b *bot) onInteraction(s *discordgo.Session, i *discordgo.InteractionCreate
 		return
 	}
 
-	if len(b.whitelistedChannels) > 0 && !list.Contains(b.whitelistedChannels, i.ChannelID) {
-		return
-	}
-
 	data := i.MessageComponentData()
 
 	// '|' is used as the delimiter. If this is present the command carries additional data
 	if strings.Contains(data.CustomID, "|") {
-		args := strings.Split(data.CustomID, "|")
-		command := args[0]
-		rest := args[1:]
+		customData := strings.Split(data.CustomID, "|")
+		command := customData[0]
+		rest := customData[1:]
 
 		commandWithPrefix := fmt.Sprintf("%s%s", b.prefix, command)
-		newArgs := append([]string{commandWithPrefix}, rest...)
+		args := append([]string{commandWithPrefix}, rest...)
 
-		b.tryCommand(commandWithPrefix, i.Message, newArgs)
+		// overwrite the author to point to the user that triggered the interaction
+		i.Message.Author = i.Member.User
+
+		b.tryCommand(commandWithPrefix, i.Message, args)
 	}
 
-	// fallback - ignore the "This interaction failed"
+	// Discord will display a "This interaction failed" if this function returns void
 	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseDeferredMessageUpdate,
 	})
@@ -117,9 +116,8 @@ func (b *bot) onMessage(session *discordgo.Session, message *discordgo.MessageCr
 		return
 	}
 
-	// message was sent in a channel that was not whitelisted.
-	// if there are no entries in the list, no whitelisting should be applied
-	if len(b.whitelistedChannels) > 0 && !list.Contains(b.whitelistedChannels, message.ChannelID) {
+	// ignore non-whitelisted channels
+	if !b.isWhitelistedChannel(message.ChannelID) {
 		return
 	}
 
@@ -134,6 +132,15 @@ func (b *bot) onMessage(session *discordgo.Session, message *discordgo.MessageCr
 	}
 
 	b.tryCommand(action, message.Message, args)
+}
+
+func (b *bot) isWhitelistedChannel(channelId string) bool {
+	if len(b.whitelistedChannels) == 0 {
+		// no whitelisted channnels. "all channels are whitelisted"
+		return true
+	}
+
+	return list.Contains(b.whitelistedChannels, channelId)
 }
 
 func (b *bot) tryCommand(action string, message *discordgo.Message, args []string) {
