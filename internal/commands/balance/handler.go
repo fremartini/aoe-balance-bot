@@ -173,8 +173,8 @@ func (h *handler) printLobbyOutput(context *bot.Context, teams []*Team, lobby *d
 		sb.WriteString(fmt.Sprintf("ELO difference: **%d** in favor of **Team %d**\n\n", diff, highestEloTeam))
 	}
 
-	recalculateButton := &ui.Button{
-		Label: "Recalculate",
+	rebalanceButton := &ui.Button{
+		Label: "Rebalance",
 		Style: uint(discordgo.PrimaryButton),
 		Id:    fmt.Sprintf("%s|%v", "balance", lobby.Id),
 	}
@@ -191,7 +191,7 @@ func (h *handler) printLobbyOutput(context *bot.Context, teams []*Team, lobby *d
 		return err
 	}
 
-	return h.messageProvider.ChannelMessageSendContentWithButton(context.ChannelId, sb.String(), []*ui.Button{recalculateButton, joinButton})
+	return h.messageProvider.ChannelMessageSendContentWithButton(context.ChannelId, sb.String(), []*ui.Button{rebalanceButton, joinButton})
 }
 
 func (h *handler) handleError(err error, context *bot.Context) {
