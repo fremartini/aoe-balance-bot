@@ -110,25 +110,24 @@ func (h *handler) printLobbyNotFound(context *bot.Context, lobbyId string) error
 	sb.WriteString("* The lobby is private or does not exist\n")
 	sb.WriteString("* The external lobby provider is not up to date\n\n")
 
-	retryButton := &ui.Button{
-		Label: "Retry",
-		Style: uint(discordgo.PrimaryButton),
-		Id:    fmt.Sprintf("%s|%s", "balance", lobbyId),
-	}
-
-	joinButton := &ui.Button{
-		Label: "Join",
-		Style: uint(discordgo.LinkButton),
-		Url:   fmt.Sprintf(`https://aoe2lobby.com/j/%s`, lobbyId),
-	}
-
 	err := h.messageProvider.ChannelMessageDelete(context.ChannelId, context.MessageId)
 
 	if err != nil {
 		return err
 	}
 
-	return h.messageProvider.ChannelMessageSendContentWithButton(context.ChannelId, sb.String(), []*ui.Button{retryButton, joinButton})
+	return h.messageProvider.ChannelMessageSendContentWithButton(context.ChannelId, sb.String(), []*ui.Button{
+		{
+			Label: "Retry",
+			Style: uint(discordgo.PrimaryButton),
+			Id:    fmt.Sprintf("%s|%s", "balance", lobbyId),
+		},
+		{
+			Label: "Join",
+			Style: uint(discordgo.LinkButton),
+			Url:   fmt.Sprintf(`https://aoe2lobby.com/j/%s`, lobbyId),
+		},
+	})
 }
 
 func (h *handler) printLobbyOutput(context *bot.Context, teams []*Team, lobby *domain.Lobby) error {
@@ -136,7 +135,7 @@ func (h *handler) printLobbyOutput(context *bot.Context, teams []*Team, lobby *d
 
 	sb.WriteString(fmt.Sprintf("<@%s> used %s", context.UserId, context.Command))
 	sb.WriteString("\n")
-	sb.WriteString(fmt.Sprintf(`Lobby **%s** (%d)`, lobby.Title, lobby.Id))
+	sb.WriteString(fmt.Sprintf(`**%s** (%d)`, lobby.Title, lobby.Id))
 	sb.WriteString("\n\n")
 
 	t1 := teams[0]
@@ -154,14 +153,6 @@ func (h *handler) printLobbyOutput(context *bot.Context, teams []*Team, lobby *d
 	totalLobbyMembers := len(t1.Players) + len(t2.Players)
 
 	if totalLobbyMembers > 1 {
-		for teamNumber, team := range teams {
-			sb.WriteString(fmt.Sprintf("**Team %d:**\n", teamNumber+1))
-			for _, player := range team.Players {
-				s := fmt.Sprintf("%s (%d)\n", player.Name, player.Rating)
-				sb.WriteString(s)
-			}
-			sb.WriteString("\n")
-		}
 
 		highestEloTeam := 1
 		if t2.ELO > t1.ELO {
@@ -170,19 +161,23 @@ func (h *handler) printLobbyOutput(context *bot.Context, teams []*Team, lobby *d
 
 		diff := abs(int(t1.ELO) - int(t2.ELO))
 
-		sb.WriteString(fmt.Sprintf("ELO difference: **%d** in favor of **Team %d**\n\n", diff, highestEloTeam))
-	}
+		for teamIndex, team := range teams {
+			teamNumber := teamIndex + 1
 
-	rebalanceButton := &ui.Button{
-		Label: "Rebalance",
-		Style: uint(discordgo.PrimaryButton),
-		Id:    fmt.Sprintf("%s|%v", "balance", lobby.Id),
-	}
+			sb.WriteString(fmt.Sprintf("**Team %d:**", teamNumber))
 
-	joinButton := &ui.Button{
-		Label: "Join",
-		Style: uint(discordgo.LinkButton),
-		Url:   fmt.Sprintf(`https://aoe2lobby.com/j/%v`, lobby.Id),
+			if teamNumber == highestEloTeam {
+				sb.WriteString(fmt.Sprintf(" (:star: +%v ELO)", diff))
+			}
+
+			sb.WriteString("\n")
+
+			for _, player := range team.Players {
+				s := fmt.Sprintf("%s (%d)\n", player.Name, player.Rating)
+				sb.WriteString(s)
+			}
+			sb.WriteString("\n")
+		}
 	}
 
 	err := h.messageProvider.ChannelMessageDelete(context.ChannelId, context.MessageId)
@@ -191,7 +186,18 @@ func (h *handler) printLobbyOutput(context *bot.Context, teams []*Team, lobby *d
 		return err
 	}
 
-	return h.messageProvider.ChannelMessageSendContentWithButton(context.ChannelId, sb.String(), []*ui.Button{rebalanceButton, joinButton})
+	return h.messageProvider.ChannelMessageSendContentWithButton(context.ChannelId, sb.String(), []*ui.Button{
+		{
+			Label: "Rebalance",
+			Style: uint(discordgo.PrimaryButton),
+			Id:    fmt.Sprintf("%s|%v", "balance", lobby.Id),
+		},
+		{
+			Label: "Join",
+			Style: uint(discordgo.LinkButton),
+			Url:   fmt.Sprintf(`https://aoe2lobby.com/j/%v`, lobby.Id),
+		},
+	})
 }
 
 func (h *handler) handleError(err error, context *bot.Context) {

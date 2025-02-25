@@ -136,7 +136,7 @@ func (b *bot) onMessage(session *discordgo.Session, message *discordgo.MessageCr
 
 func (b *bot) isWhitelistedChannel(channelId string) bool {
 	if len(b.whitelistedChannels) == 0 {
-		// no whitelisted channnels. "all channels are whitelisted"
+		// no whitelisted channnels. All channels are whitelisted
 		return true
 	}
 
